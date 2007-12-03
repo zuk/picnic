@@ -25,8 +25,6 @@ module Picnic
       
       self.create
       s.mount "#{Picnic::Conf.uri_path}", WEBrick::CampingHandler, self
-      
-      puts "\n** #{self} is running at http://localhost:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to '#{Picnic::Conf.log[:file]}'\n\n"
     
       # This lets Ctrl+C shut down your server
       trap(:INT) do
@@ -35,19 +33,35 @@ module Picnic
       trap(:TERM) do
         s.shutdown
       end
-    
+            
       if $DAEMONIZE
+        puts "\n** #{self} will run at http://localhost:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and log to #{Picnic::Conf.log[:file].inspect}. "
+        puts "** Check the log file for further messages!\n\n"
+        
+        logdev = $LOG.instance_variable_get(:@logdev).instance_variable_get(:@filename)
+        if logdev == 'STDOUT' || logdev == nil
+          puts "\n!!! Warning !!!\nLogging to the console (STDOUT) is not possible once the server daemonizes. "+
+            "You should change the logger configuration to point to a real file."
+        end
+        
         WEBrick::Daemon.start do
-          write_pid_file if $PID_FILE
-          s.start
-          clear_pid_file
+          begin
+            write_pid_file if $PID_FILE
+            $LOG.info "Starting #{self} as a WEBrick daemon with process id #{Process.pid}."
+            s.start
+            $LOG.info "Stopping #{self} WEBrick daemon with process id #{Process.pid}."
+            clear_pid_file
+          rescue => e
+            $LOG.error e
+            raise e
+          end
         end
       else
+        puts "\n** #{self} is running at http://localhost:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to #{Picnic::Conf.log[:file].inspect}\n\n"
+        
         s.start
       end
     end
-    
-    
     
     def mongrel
       require 'rubygems'
@@ -67,7 +81,7 @@ module Picnic
       
       self.create
       
-      puts "\n** #{self} is starting. Look in '#{Picnic::Conf.log[:file]}' for further notices."
+      puts "\n** #{self} is starting. Look in #{Picnic::Conf.log[:file].inspect} for further notices."
       
       settings = {:host => "0.0.0.0", :log_file => Picnic::Conf.log[:file], :cwd => $CASSERVER_HOME}
       
@@ -95,7 +109,7 @@ module Picnic
       if $DAEMONIZE && $PID_FILE
         write_pid_file
         unless File.exists? $PID_FILE
-          $LOG.error "#{self} could not start because pid file '#{$PID_FILE}' could not be created."
+          $LOG.error "#{self} could not start because pid file #{$PID_FILE.inspect} could not be created."
           exit 1
         end
       end
@@ -136,24 +150,24 @@ module Picnic
     end
     
     def check_pid_writable
-      $LOG.debug "Checking if pid file '#{$PID_FILE}' is writable"
+      $LOG.debug "Checking if pid file #{$PID_FILE.inspect} is writable"
       begin        
         f = open($PID_FILE, 'w')
       rescue
-        $stderr.puts "Couldn't write to log at '#{$PID_FILE}' (#{$!})."
+        $stderr.puts "Couldn't write to log at #{$PID_FILE.inspect} (#{$!})."
         exit 1
       end
       f.close
     end
     
     def write_pid_file
-      $LOG.debug "Writing pid '#{Process.pid}' to pid file '#{$PID_FILE}'"
+      $LOG.debug "Writing pid #{Process.pid.inspect} to pid file #{$PID_FILE.inspect}"
       open($PID_FILE, "w") { |file| file.write(Process.pid) }
     end
     
     def clear_pid_file
       if $PID_FILE && File.exists?($PID_FILE)
-        $LOG.debug "Clearing pid file '#{$PID_FILE}'"
+        $LOG.debug "Clearing pid file #{$PID_FILE.inspect}"
         File.unlink $PID_FILE
       end
     end

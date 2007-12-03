@@ -13,7 +13,8 @@ module Picnic
     def initialize(app, options = {})
       @app = app
       
-      @options = {}
+      @options = options
+      @options[:bin_file]  ||= "./#{app}"
       @options[:pid_file]  ||= "/etc/#{app}/#{app}.pid"
       @options[:conf_file] ||= nil
       @options[:verbose]   ||= false
@@ -21,7 +22,7 @@ module Picnic
       @options = options
     end
     
-    def parse_cli_opts
+    def handle_cli_input
         OptionParser.new do |opts|
         opts.banner = "Usage: #{$0} (start|stop|restart) [options]"
         opts.banner += "\n#{app} is only usable when using webrick or mongrel"
@@ -70,8 +71,8 @@ module Picnic
     
     def start
       # use local app bin if it exists and is executable -- makes debugging easier
-      bin = File.dirname(File.expand_path(__FILE__)) + "/#{app}"
-    
+      bin = options[:bin_file]
+      
       if File.exists?(bin)
         exec = "ruby #{bin}"
       else

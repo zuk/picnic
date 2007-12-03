@@ -7,7 +7,7 @@ module Picnic
     }
     
     def [](key)
-      $CONF[key] || DEFAULTS[key]
+      $CONF[key]
     end
     module_function "[]".intern
     
@@ -75,6 +75,10 @@ module Picnic
         else
           $CONF = loaded_conf
         end
+        
+        $CONF = HashWithIndifferentAccess.new(DEFAULTS).merge $CONF
+        
+        $CONF[:log][:file] = STDOUT unless $CONF[:log][:file]
         
         puts "\nLoaded configuration: #{$CONF.to_yaml}"
         puts

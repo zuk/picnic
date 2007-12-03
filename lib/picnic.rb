@@ -32,7 +32,7 @@ class Module
       def init_db_logger
         begin
           if Picnic::Conf.db_log
-            log_file = Picnic::Conf.db_log[:file] || 'fluxr_db.log'
+            log_file = Picnic::Conf.db_log[:file] || "#{self.to_s.downcase}_db.log"
             self::Models::Base.logger = Logger.new(log_file)
             self::Models::Base.logger.level = "Picnic::Utils::Logger::#{Picnic::Conf.db_log[:level] || 'DEBUG'}".constantize
           end
@@ -48,8 +48,8 @@ class Module
           
           require 'picnic/postambles'
           self.extend Picnic::Postambles
-        
-          if $PID_FILE && (Picnic::Conf.server.to_s != 'mongrel' || Picnic::Conf.server.to_s != 'webrick')
+          
+          if $PID_FILE && !(Picnic::Conf.server.to_s == 'mongrel' || Picnic::Conf.server.to_s == 'webrick')
             $LOG.warn("Unable to create a pid file. You must use mongrel or webrick for this feature.")
           end
         
