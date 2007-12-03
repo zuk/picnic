@@ -35,7 +35,7 @@ module Picnic
       end
             
       if $DAEMONIZE
-        puts "\n** #{self} will run at http://localhost:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and log to #{Picnic::Conf.log[:file].inspect}. "
+        puts "\n** #{self} will run at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and log to #{Picnic::Conf.log[:file].inspect}. "
         puts "** Check the log file for further messages!\n\n"
         
         logdev = $LOG.instance_variable_get(:@logdev).instance_variable_get(:@filename)
@@ -57,7 +57,7 @@ module Picnic
           end
         end
       else
-        puts "\n** #{self} is running at http://localhost:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to #{Picnic::Conf.log[:file].inspect}\n\n"
+        puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to #{Picnic::Conf.log[:file].inspect}\n\n"
         
         s.start
       end
@@ -114,7 +114,7 @@ module Picnic
         end
       end
       
-      puts "\n** #{self} is running at http://localhost:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to '#{Picnic::Conf.log[:file]}'"
+      puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to '#{Picnic::Conf.log[:file]}'"
       config.join
 
       clear_pid_file
