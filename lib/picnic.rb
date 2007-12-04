@@ -41,6 +41,18 @@ class Module
         end
       end
       module_function :init_db_logger
+      
+      def authenticate_using(mod)
+        require 'picnic/authentication'
+        mod = "Picnic::Authentication::#{mod.to_s.camelize}".constantize unless mod.kind_of? Module
+        
+        $LOG.info("Enabling authentication for all requests using #{mod.inspect}.")
+        
+        module_eval do
+          include mod
+        end
+      end
+      module_function :authenticate_using
     
       def start_picnic
           #Fluxr::Models::Base.establish_connection(Fluxr::Conf.database)
