@@ -24,17 +24,17 @@ class Module
     self.module_eval do
       def init_logger
         puts "Initializing #{self} logger..."
-        $LOG = Picnic::Utils::Logger.new(Picnic::Conf.log[:file])
-        $LOG.level = "Picnic::Utils::Logger::#{Picnic::Conf.log[:level]}".constantize
+        $LOG = self::Utils::Logger.new(self::Conf.log[:file])
+        $LOG.level = "#{self}::Utils::Logger::#{self::Conf.log[:level]}".constantize
       end
       module_function :init_logger
       
       def init_db_logger
         begin
-          if Picnic::Conf.db_log
-            log_file = Picnic::Conf.db_log[:file] || "#{self.to_s.downcase}_db.log"
+          if self::Conf.db_log
+            log_file = self::Conf.db_log[:file] || "#{self.to_s.downcase}_db.log"
             self::Models::Base.logger = Logger.new(log_file)
-            self::Models::Base.logger.level = "Picnic::Utils::Logger::#{Picnic::Conf.db_log[:level] || 'DEBUG'}".constantize
+            self::Models::Base.logger.level = "#{self}::Utils::Logger::#{self::Conf.db_log[:level] || 'DEBUG'}".constantize
           end
         rescue Errno::EACCES => e
           $LOG.warn "Can't write to database log file at '#{log_file}': #{e}"
@@ -44,7 +44,7 @@ class Module
       
       def authenticate_using(mod)
         require 'picnic/authentication'
-        mod = "Picnic::Authentication::#{mod.to_s.camelize}".constantize unless mod.kind_of? Module
+        mod = "#{self}::Authentication::#{mod.to_s.camelize}".constantize unless mod.kind_of? Module
         
         $LOG.info("Enabling authentication for all requests using #{mod.inspect}.")
         
@@ -59,15 +59,18 @@ class Module
           #Fluxr.init_db_logger unless Fluxr::Conf.server.to_s == 'mongrel'
           
           require 'picnic/postambles'
-          self.extend Picnic::Postambles
+          self.extend self::Postambles
           
-          if $PID_FILE && !(Picnic::Conf.server.to_s == 'mongrel' || Picnic::Conf.server.to_s == 'webrick')
+          if $PID_FILE && !(self::Conf.server.to_s == 'mongrel' || self::Conf.server.to_s == 'webrick')
             $LOG.warn("Unable to create a pid file. You must use mongrel or webrick for this feature.")
           end
+          
+          puts "\nStarting with configuration: #{$CONF.to_yaml}"
+          puts
         
         #  begin
-            raise NoMethodError if Picnic::Conf.server.nil?
-            send(Picnic::Conf.server)
+            raise NoMethodError if self::Conf.server.nil?
+            send(self::Conf.server)
         #  rescue NoMethodError => e
         #    # FIXME: this rescue can sometime report the incorrect error messages due to other underlying problems
         #    #         raising a NoMethodError
@@ -86,7 +89,7 @@ class Module
       
     end
     
-    Picnic::Conf.load(self)
+    self::Conf.load(self)
     init_logger
   end
 end

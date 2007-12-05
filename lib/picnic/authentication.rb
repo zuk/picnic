@@ -55,7 +55,7 @@ module Picnic #:nodoc:
           return {:username => u, :password => p}
         end
       end
-  
+      
       # The <tt>service</tt> method, when mixed into your application module, wraps around the
       # <tt>service</tt> method defined by Camping. It halts execution of the controllers when
       # your <tt>authenticate</tt> method returns false. See the module documentation how to
@@ -67,7 +67,7 @@ module Picnic #:nodoc:
           s = super(*a)
         else
           @status = 401
-          @headers['Content-type'] = 'text/plain'
+          @headers['Content-type'] = @headers['Content-type'] || 'text/plain'
           @headers['Status'] = 'Unauthorized'
           @headers['WWW-Authenticate'] = "Basic realm=\"#{app}\""
           @body = 'Unauthorized'

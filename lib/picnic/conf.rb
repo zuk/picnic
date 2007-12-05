@@ -1,15 +1,15 @@
 module Picnic
-  module Conf
-    DEFAULTS = {
-      :log => {:file => STDOUT, :level => 'DEBUG'},
-      :uri_path => "/",
-      :base_dir => "."
-    }
+  class Conf
+    $CONF ||= HashWithIndifferentAccess.new
+    $CONF[:log] ||= HashWithIndifferentAccess.new
+    $CONF[:log][:file]  ||= STDOUT
+    $CONF[:log][:level] ||= 'DEBUG'
+    $CONF[:uri_path]    ||= "/"
+    $CONF[:base_dir]    ||= "."
     
-    def [](key)
+    def self.[](key)
       $CONF[key]
     end
-    module_function "[]".intern
     
     def self.method_missing(method, *args)
       self[method]
@@ -71,17 +71,13 @@ module Picnic
         loaded_conf = HashWithIndifferentAccess.new(YAML.load_file(conf_file))
         
         if $CONF
-          $CONF = loaded_conf.merge $CONF
+          $CONF = HashWithIndifferentAccess.new($CONF)
+          $CONF = $CONF.merge(loaded_conf)
         else
           $CONF = loaded_conf
         end
         
-        $CONF = HashWithIndifferentAccess.new(DEFAULTS).merge $CONF
-        
         $CONF[:log][:file] = STDOUT unless $CONF[:log][:file]
-        
-        puts "\nLoaded configuration: #{$CONF.to_yaml}"
-        puts
         
       rescue
           raise "Your #{app} configuration may be invalid."+
