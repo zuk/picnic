@@ -53,5 +53,6 @@ hoe = Hoe.new(GEM_NAME, VERS) do |p|
   #p.extra_deps     - An array of rubygem dependencies.
   #p.spec_extras    - A hash of extra values to set in the gemspec.
   
-  p.extra_deps = ['camping']
+  # we now package camping-1.5.0.180 in the vendor directory
+  #p.extra_deps = ['camping']
 end

@@ -67,11 +67,6 @@ module Picnic
       require 'rubygems'
       require 'mongrel/camping'
       
-      # camping has fixes for mongrel currently only availabe in SVN
-      # ... you can install camping from svn (1.5.180) by running: 
-      #     gem install camping --source code.whytheluckystiff.net
-      gem 'camping', '~> 1.5.180'
-      
       if $DAEMONIZE
         # check if log and pid are writable before daemonizing, otherwise we won't be able to notify
         # the user if we run into trouble later (since once daemonized, we can't write to stdout/stderr)
@@ -83,17 +78,18 @@ module Picnic
       
       puts "\n** #{self} is starting. Look in #{Picnic::Conf.log[:file].inspect} for further notices."
       
-      settings = {:host => "0.0.0.0", :log_file => Picnic::Conf.log[:file], :cwd => $CASSERVER_HOME}
+      settings = {:host => "0.0.0.0", :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH}
       
       # need to close all IOs before daemonizing
       $LOG.close if $DAEMONIZE
       
       begin
+        app_mod = self
         config = Mongrel::Configurator.new settings  do
-          daemonize :log_file => Picnic::Conf.log[:file], :cwd => $CASSERVER_HOME if $DAEMONIZE
+          daemonize :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH if $DAEMONIZE
           
           listener :port => Picnic::Conf.port do
-            uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(self)
+            uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(app_mod)
             setup_signals
           end
         end
