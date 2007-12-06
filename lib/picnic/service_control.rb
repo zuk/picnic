@@ -23,7 +23,7 @@ module Picnic
     end
     
     def handle_cli_input
-        OptionParser.new do |opts|
+      OptionParser.new do |opts|
         opts.banner = "Usage: #{$0} (start|stop|restart) [options]"
         opts.banner += "\n#{app} is only usable when using webrick or mongrel"
        
