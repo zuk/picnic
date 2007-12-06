@@ -15,8 +15,13 @@ module Picnic
     end
     
     def self.example_config_file_path
-      caller.last =~ /^(.*?):\d+$/
-      File.dirname(File.expand_path($1))+'/../config.example.yml'
+      if $APP_PATH
+        app_path = File.expand_path($APP_PATH)
+      else
+        caller.last =~ /^(.*?):\d+$/
+        app_path = File.dirname(File.expand_path($1))
+      end
+      app_path+'/../config.example.yml'
     end
     
     def self.copy_example_config_file(app, dest_conf_file)

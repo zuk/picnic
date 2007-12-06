@@ -1,7 +1,7 @@
 module Picnic
   module Controllers
     class Public < Camping::Controllers::R '/public/(.+)'
-      BASE_PATH = File.expand_path(File.dirname(__FILE__))+'/lib/public'
+      BASE_PATH = ("#{$APP_PATH}/.." || File.expand_path(File.dirname(__FILE__)))+'/lib/public'
       
       MIME_TYPES = {'.css' => 'text/css', '.js' => 'text/javascript', 
                     '.jpg' => 'image/jpeg', '.png' => 'image/png', 

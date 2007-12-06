@@ -67,6 +67,8 @@ module Picnic
         end
       end.parse!
       
+      $APP_PATH = options[:app_path]
+      
       load "#{path}/lib/#{app}.rb"
     end
   end
