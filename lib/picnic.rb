@@ -20,7 +20,7 @@ class Module
   def picnic!
     include Picnic
     
-    puts "Adding Picnic functionality to #{self}..."
+    puts "Adding Picnic functionality to #{self} from #{File.dirname(File.expand_path(__FILE__))}..."
     self.module_eval do
       def init_logger
         puts "Initializing #{self} logger..."
