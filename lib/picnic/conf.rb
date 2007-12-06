@@ -53,7 +53,7 @@ module Picnic
     
     def self.load(app)
       
-      conf_file = "/etc/#{app.to_s.downcase}/config.yml"
+      conf_file = $CONFIG_FILE || "/etc/#{app.to_s.downcase}/config.yml"
       
       puts "Loading configuration for #{app} from '#{conf_file}'..."
       
