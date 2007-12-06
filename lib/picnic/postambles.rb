@@ -48,6 +48,7 @@ module Picnic
           begin
             write_pid_file if $PID_FILE
             $LOG.info "Starting #{self} as a WEBrick daemon with process id #{Process.pid}."
+            self.prestart if self.respond_to? :prestart
             s.start
             $LOG.info "Stopping #{self} WEBrick daemon with process id #{Process.pid}."
             clear_pid_file
@@ -58,7 +59,7 @@ module Picnic
         end
       else
         puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to #{Picnic::Conf.log[:file].inspect}\n\n"
-        
+        self.prestart if self.respond_to? :prestart
         s.start
       end
     end
@@ -97,6 +98,7 @@ module Picnic
         exit 1
       end
       
+      
       config.run
       
       self.init_logger
@@ -111,6 +113,8 @@ module Picnic
       end
       
       puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to '#{Picnic::Conf.log[:file]}'"
+      
+      self.prestart if self.respond_to? :prestart
       config.join
 
       clear_pid_file
