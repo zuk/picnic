@@ -1,9 +1,7 @@
 $: << File.dirname(File.expand_path(__FILE__))
 $: << File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib"
 
-
 require 'camping'
-
 
 require 'active_support' unless Object.const_defined?(:ActiveSupport)
 
@@ -11,8 +9,6 @@ require 'picnic/utils'
 require 'picnic/conf'
 require 'picnic/postambles'
 require 'picnic/controllers'
-
-
 
 
 class Module

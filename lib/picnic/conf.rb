@@ -5,7 +5,6 @@ module Picnic
     $CONF[:log][:file]  ||= STDOUT
     $CONF[:log][:level] ||= 'DEBUG'
     $CONF[:uri_path]    ||= "/"
-    $CONF[:base_dir]    ||= "."
     
     def self.[](key)
       $CONF[key]
