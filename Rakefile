@@ -31,7 +31,7 @@ RDOC_OPTS = ['--quiet', '--title', "picnic #{VERS} documentation",
     "--inline-source"]
 
 class Hoe
-  def extra_deps 
+  def extra_deps
     @extra_deps.reject { |x| Array(x).first == 'hoe' } 
   end 
 end
