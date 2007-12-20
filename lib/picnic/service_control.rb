@@ -192,7 +192,7 @@ module Picnic
       
       s = get_state
       
-      puts ">>> STATE: #{s.inspect}" if options[:verbose]
+      puts ">>> STATE: #{s.to_s}" if options[:verbose]
       
       if s == :ok
         exit 0
