@@ -184,16 +184,20 @@ module Picnic
       cmd = "#{exec} -d -P #{@options[:pid_file]}"
       cmd += " -c #{@options[:conf_file]}" if !@options[:conf_file].nil?
       
-      puts ">>> #{cmd}" if @options[:verbose]
+      puts "<<< #{cmd}" if @options[:verbose]
       
       output = `#{cmd}`
       
-      puts "<<< #{output}" if @options[:verbose]
+      puts ">>> #{output}" if @options[:verbose]
       
-      if s = get_state == :ok
+      s = get_state
+      
+      puts ">>> STATE: #{s.inspect}" if options[:verbose]
+      
+      if s == :ok
         exit 0
       else
-        $stderr.puts "#{app} could not start properly! (#{s})\nTry running with the --verbose option for details." 
+        $stderr.puts "\n#{app} could not start properly!\nTry running with the --verbose option for details." 
         case s
         when :missing_pid
           exit 4
