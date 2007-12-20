@@ -1,6 +1,30 @@
 module Picnic
+  # In Camping, "postambles" are wrappers used to make your application run under
+  # some given web server. They are called "postambles" because traditionally this
+  # was a piece of code included at the bottom of your Camping script. Picnic
+  # provides postambles for two popular Ruby-based web servers: webrick and mongrel.
+  # These postambles take care of all the complications of launching and managing
+  # the web server for you.
   module Postambles
     
+    # Launches your Camping application using a webrick server.
+    #
+    # It is possible to run using SSL by providing an <tt>:ssl_cert</tt> path in your
+    # app's configuration file, pointing to a valid SSL certificate file.
+    #
+    # If $DAEMONIZE is true, the webrick server will be forked to a background process.
+    # Note that this may have some strange effects, since any open IOs or threads will not
+    # be carried over to the forked daemon process.
+    #
+    # Module#start_picnic automatically calls this method to launch your Picnic app if
+    # your app's <tt>:server</tt> configuration option is set to <tt>'webrick'</tt>.
+    #
+    # Usage example:
+    #
+    #   require 'picnic/postambles'
+    #   self.extend self::Postambles
+    #   webrick
+    #
     def webrick
       require 'webrick/httpserver'
       require 'webrick/https'
@@ -64,6 +88,27 @@ module Picnic
       end
     end
     
+    # Launches your Camping application using a mongrel server.
+    #
+    # Mongrel is much faster than webrick, but has two limitations:
+    # 1. You must install the mongrel gem before you can run your server using mongrel.
+    #    This is not necessary with webrick, since webrick is included by default with Ruby.
+    # 2. Unlike webrick, mongrel can't be run using SSL. You will have to use a reverse
+    #    proxy like Pound or Apache if you want to use mongrel with SSL. 
+    #
+    # If $DAEMONIZE is true, the mongrel server will be forked to a background process.
+    # Note that this may have some strange effects, since any open IOs or threads will not
+    # be carried over to the forked daemon process.
+    #
+    # Module#start_picnic automatically calls this method to launch your Picnic app if
+    # your app's <tt>:server</tt> configuration option is set to <tt>'mongrel'</tt>.
+    #
+    # Usage example:
+    #
+    #   require 'picnic/postambles'
+    #   self.extend self::Postambles
+    #   mongrel
+    #
     def mongrel
       require 'rubygems'
       require 'mongrel/camping'
@@ -122,22 +167,25 @@ module Picnic
       puts "\n** #{self} is stopped (#{Time.now})"
     end
     
-    
+    # Theoretically this should launch your Picnic app as a FastCGI process.
+    # I say "theoretically" because this has never actually been tested.
     def fastcgi
       require 'camping/fastcgi'
-      Dir.chdir('/srv/www/camping/fluxr/')
+      Dir.chdir('.')
       
       self.create
       Camping::FastCGI.start(self)
     end
     
-    
+    # Theoretically this should launch your Picnic app as a CGI process.
+    # I say "theoretically" because this has never actually been tested.
     def cgi
       self.create
       puts self.run
     end
     
     private
+    # Prints an error message to stderr if the log file is not writable.
     def check_log_writable
       log_file = Picnic::Conf.log['file']
       begin
@@ -149,6 +197,7 @@ module Picnic
       f.close
     end
     
+    # Prints an error message to stderr if the pid file is not writable.
     def check_pid_writable
       $LOG.debug "Checking if pid file #{$PID_FILE.inspect} is writable"
       begin        
@@ -160,11 +209,13 @@ module Picnic
       f.close
     end
     
+    # Writes the pid file.
     def write_pid_file
       $LOG.debug "Writing pid #{Process.pid.inspect} to pid file #{$PID_FILE.inspect}"
       open($PID_FILE, "w") { |file| file.write(Process.pid) }
     end
     
+    # Removes the pid file.
     def clear_pid_file
       if $PID_FILE && File.exists?($PID_FILE)
         $LOG.debug "Clearing pid file #{$PID_FILE.inspect}"

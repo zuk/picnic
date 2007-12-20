@@ -20,8 +20,8 @@ HOMEPATH = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 
 
 NAME = "picnic"
-#REV = nil
-REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
+REV = nil
+#REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 VERS = ENV['VERSION'] || (Picnic::VERSION::STRING + (REV ? ".#{REV}" : ""))
                           CLEAN.include ['**/.*.sw?', '*.gem', '.config']
 RDOC_OPTS = ['--quiet', '--title', "picnic #{VERS} documentation",

@@ -1,4 +1,15 @@
 module Picnic
+  # Provides an interface for accessing your Picnic app's configuration file.
+  #
+  # Usage example:
+  #
+  #   # Load the configuration from /etc/foo/config.yml
+  #   Conf.load('foo')
+  #
+  #   # The contents of config.yml is now available as follows:
+  #   puts Conf[:server]
+  #   puts Conf[:authentication][:username]
+  #   # ... etc.
   class Conf
     $CONF ||= HashWithIndifferentAccess.new
     $CONF[:log] ||= HashWithIndifferentAccess.new
@@ -6,14 +17,30 @@ module Picnic
     $CONF[:log][:level] ||= 'DEBUG'
     $CONF[:uri_path]    ||= "/"
     
+    # Read a configuration option.
+    #
+    # For example:
+    #   puts Conf[:server]
     def self.[](key)
       $CONF[key]
     end
     
+    # Another way of reading a configuration option.
+    #
+    # The following statements are equivalent:
+    #   puts Conf[:server]
+    #   puts Conf.server
     def self.method_missing(method, *args)
       self[method]
     end
     
+    # Returns the path to your application's example config file.
+    #
+    # The example config file should be in the root directory of
+    # your application's distribution package and should be called
+    # <tt>config.example.yml</tt>. This file is used as a template
+    # for your app's configuration, to be customized by the end
+    # user. 
     def self.example_config_file_path
       if $APP_PATH
         app_path = File.expand_path($APP_PATH)
@@ -24,6 +51,12 @@ module Picnic
       app_path+'/../config.example.yml'
     end
     
+    # Copies the example config file into the appropriate
+    # configuration directory.
+    #
+    # +app+:: The name of your application. For example: <tt>foo</tt>
+    # +dest_conf_file:: The path where the example conf file should be copied to.
+    #                   For example: <tt>/etc/foo/config.yml</tt>
     def self.copy_example_config_file(app, dest_conf_file)
       require 'fileutils'
           
@@ -55,6 +88,12 @@ module Picnic
       exit 1
     end
     
+    # Loads the configuration from the yaml file for the given app.
+    #
+    # <tt>app</tt> should be the name of your app; for example: <tt>foo</tt>.
+    #
+    # By default, the configuration will be loaded from <tt>/etc/<app>/config.yml</tt>.
+    # You can override this by setting a global <tt>$CONFIG_FILE</tt> variable.
     def self.load(app)
       
       conf_file = $CONFIG_FILE || "/etc/#{app.to_s.downcase}/config.yml"

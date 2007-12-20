@@ -1,11 +1,13 @@
-# Misc utility function used throughout by Picnic
 module Picnic
+  # Supporting utility functions used throughout Picnic
   module Utils
+    # Generates a random string, at most 32 characters in length.
     def random_string
       "#{Time.now.to_i}r%X" % rand(10**32)
     end
     module_function :random_string
     
+    # The customized Logger used for logging in Picnic.
     class Logger < ::Logger
       def initialize(logdev, shift_age = 0, shift_size = 1048576)
         begin
@@ -22,6 +24,7 @@ module Picnic
     end
   end
   
+  # Custom log formatter used by the Picnic Logger.
   class LogFormatter < ::Logger::Formatter
     Format = "[%s#%d] %5s -- %s: %s\n"
     

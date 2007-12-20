@@ -6,10 +6,92 @@ module Picnic
   # an init.d service. 
   #
   # Based on code from rubycas-server by jzylks and matt.zukowski.
+  #
+  # Usage Example:
+  #
+  #   #!/usr/bin/env ruby
+  #   
+  #   require 'rubygems'
+  #   require 'picnic/service_control'
+  #
+  #   ctl = Picnic::ServiceControl.new('foo')
+  #   ctl.handle_cli_input
+  #
+  # The file containing this code can now be used to control the Picnic
+  # app 'foo'.
+  #
+  # For, example, lets say you put this in a file called <tt>foo-ctl</tt>. 
+  # You can now use <tt>foo-ctl</tt> on the command line as follows:
+  #
+  #   chmod +x foo-ctl
+  #   ./foo-ctl -h
+  #   ./foo-ctl start --verbose --config /etc/foo/config.yml
+  #   ./foo-ctl stop --config /etc/foo/config.yml
+  #
+  # Your <tt>foo-ctl</tt> script can also be used as part of Linux's init.d
+  # mechanism for launching system services. To do this, create the file
+  # <tt>/etc/init.d/foo</tt> and make sure that it is executable. It will
+  # look something like the following (this may vary depending on your Linux
+  # distribution; this example is for SuSE):
+  #
+  #   #!/bin/sh
+  #   CTL=foo-ctl
+  #   . /etc/rc.status
+  #
+  #   rc_reset
+  #   case "$1" in
+  #       start)
+  #           $CTL start
+  #           rc_status -v
+  #           ;;
+  #       stop)
+  #           $CTL stop
+  #           rc_status -v
+  #           ;;
+  #       restart)
+  #           $0 stop
+  #           $0 start
+  #           rc_status
+  #           ;;
+  #       status)
+  #           $CTL status
+  #           rc_status -v
+  #           ;;
+  #       *)
+  #           echo "Usage: $0 {start|stop|status|restart}
+  #           exit 1
+  #           ;;
+  #   esac
+  #   rc_exit
+  #
+  # You should now be able to launch your application like any other init.d script
+  # (just make sure that <tt>foo-ctl</tt> is installed in your executable <tt>PATH</tt>
+  # -- if your application is properly installed as a RubyGem, this will be done automatically).
+  #
+  # On most Linux systems, you can make your app start up automatically during boot by calling:
+  # 
+  #   chkconfig -a foo
+  #
+  # On Debian and Ubuntu, it's:
+  #
+  #   update-rc.d foo defaults
+  #
   class ServiceControl
     
     attr_accessor :app, :options
     
+    # Creates a new service controller.
+    #
+    # +app+:: The name of the application. This should match the name of the
+    #         binary, which by default is expected to be in the same directory
+    #         as the service control script.
+    # +options+:: A hash overriding default options. The options are:
+    #             +bin_file+:: The name of the binary file that this control
+    #                          script will use to start and stop your app.
+    #             +pid_file+:: Where the app's PID file (containing the app's
+    #                          process ID) should be placed.
+    #             +verbose+::  True if the service control script should report
+    #                          everything that it's doing to STDOUT.  
     def initialize(app, options = {})
       @app = app
       
@@ -22,6 +104,7 @@ module Picnic
       @options = options
     end
     
+    # Parses command line options given to the service control script.
     def handle_cli_input
       OptionParser.new do |opts|
         opts.banner = "Usage: #{$0} (start|stop|restart) [options]"

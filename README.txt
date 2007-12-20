@@ -1,7 +1,21 @@
-README for picnic
-=================
+= Picnic
 
-----
+<b>Picnic makes it easy(ier) to distribute and run Camping-based applications as 
+well-behaved stand-alone Linux servers (although it works on Windows too).</b>
+
+*Author*::    Matt Zukowski (matt at roughest dot net)
+*Copyright*:: Copyright (c) 2007 Urbacon Ltd.
+*License*::   GNU Lesser General Public License Version 3
+*Homepage*::  http://camping-picnic.googlecode.com
+
+For detailed information and usage examples, please see Picnic's Google Code page at:
+<b>http://camping-picnic.googlecode.com</b>
+
+For info on the Camping microframework, see: 
+http://code.whytheluckystiff.net/camping and
+http://camping.rubyforge.org/files/README.html
+
+== License
 
 picnic is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published 

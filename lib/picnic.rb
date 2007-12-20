@@ -13,11 +13,23 @@ require 'picnic/controllers'
 
 class Module
   
+  # Adds Picnic functionality to a Camping-enabled module.
+  #
+  # Example:
+  #
+  #   Camping.goes :Blog
+  #   Blog.picnic!
+  #
+  # Your <tt>Blog</tt> Camping app now has Picnic functionality.
   def picnic!
     include Picnic
     
     puts "Adding Picnic functionality to #{self} from #{File.dirname(File.expand_path(__FILE__))}..."
     self.module_eval do
+      # Initialize your application's logger. 
+      # This is automatically done for you when you call #picnic!
+      # The logger is initialized based on your <tt>:log</tt> configuration.
+      # See <tt>config.example.yml</tt> for info on configuring the logger.
       def init_logger
         puts "Initializing #{self} logger..."
         $LOG = self::Utils::Logger.new(self::Conf.log[:file])
@@ -25,6 +37,8 @@ class Module
       end
       module_function :init_logger
       
+      # Initialize your application's database logger. 
+      # If enabled, all SQL queries going through ActiveRecord will be logged here.
       def init_db_logger
         begin
           if self::Conf.db_log
@@ -38,6 +52,22 @@ class Module
       end
       module_function :init_db_logger
       
+      # Enable authentication for your app.
+      #
+      # For example:
+      #
+      #   Camping.goes :Blog
+      #   Blog.picnic!
+      #
+      #   $CONF[:authentication] ||= {:username => 'admin', :password => 'picnic'}
+      #   Blog.authenticate_using :basic if Blog::Conf[:authentication]
+      #
+      # Note that in the above example we use the authentication configuration from
+      # your app's conf file. We specify default credentials for when your
+      # conf file doesn't define them.
+      #
+      # Currently only HTTP Basic authentication is available. See Picnic::Authentication
+      # for more info.
       def authenticate_using(mod)
         require 'picnic/authentication'
         mod = "#{self}::Authentication::#{mod.to_s.camelize}".constantize unless mod.kind_of? Module
@@ -50,10 +80,9 @@ class Module
       end
       module_function :authenticate_using
     
+      # Launches the web server to run your Picnic app.
+      # This method will continue to run as long as your server is running.
       def start_picnic
-          #Fluxr::Models::Base.establish_connection(Fluxr::Conf.database)
-          #Fluxr.init_db_logger unless Fluxr::Conf.server.to_s == 'mongrel'
-          
           require 'picnic/postambles'
           self.extend self::Postambles
           
