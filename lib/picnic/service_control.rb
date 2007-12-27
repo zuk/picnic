@@ -96,7 +96,7 @@ module Picnic
       @app = app
       
       @options = options
-      @options[:bin_file]  ||= "./#{app}"
+      @options[:bin_file]  ||= File.expand_path(File.dirname(File.expand_path(__FILE__)))+"/#{app}"
       @options[:pid_file]  ||= "/etc/#{app}/#{app}.pid"
       @options[:conf_file] ||= nil
       @options[:verbose]   ||= false
