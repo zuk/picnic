@@ -95,8 +95,8 @@ module Picnic
           exit
         end
         
-        opts.on_tail("-v", "--version", "Show version number") do
-          require "#{path}#{app}/version"
+        opts.on_tail("-V", "--version", "Show version number") do
+          require "#{path}/lib/#{app}/version"
           puts "#{app}-#{VERSION::STRING}"
           exit
         end
