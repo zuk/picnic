@@ -20,8 +20,8 @@ HOMEPATH = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 
 
 NAME = "picnic"
-REV = nil
-#REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
+#REV = nil
+REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 VERS = ENV['VERSION'] || (Picnic::VERSION::STRING + (REV ? ".#{REV}" : ""))
                           CLEAN.include ['**/.*.sw?', '*.gem', '.config']
 RDOC_OPTS = ['--quiet', '--title', "picnic #{VERS} documentation",
@@ -53,6 +53,6 @@ hoe = Hoe.new(GEM_NAME, VERS) do |p|
   #p.extra_deps     - An array of rubygem dependencies.
   #p.spec_extras    - A hash of extra values to set in the gemspec.
   
-  # we now package camping-1.5.0.180 in the vendor directory
-  #p.extra_deps = ['camping']
+  # note that camping-1.5.0.180 is now bundled with picnic the vendor directory, 
+  p.extra_deps = ['markaby']
 end
