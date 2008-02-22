@@ -60,14 +60,18 @@ class Module
       #   Blog.picnic!
       #
       #   $CONF[:authentication] ||= {:username => 'admin', :password => 'picnic'}
-      #   Blog.authenticate_using :basic if Blog::Conf[:authentication]
+      #   Blog.authenticate_using :basic
+      #
+      #   module Blog
+      #     def self.authenticate(credentials)
+      #       credentials[:username] == Taskr::Conf[:authentication][:username] &&
+      #         credentials[:password] == Taskr::Conf[:authentication][:password]
+      #     end
+      #   end
       #
       # Note that in the above example we use the authentication configuration from
-      # your app's conf file. We specify default credentials for when your
-      # conf file doesn't define them.
+      # your app's conf file.
       #
-      # Currently only HTTP Basic authentication is available. See Picnic::Authentication
-      # for more info.
       def authenticate_using(mod)
         require 'picnic/authentication'
         mod = "#{self}::Authentication::#{mod.to_s.camelize}".constantize unless mod.kind_of? Module
