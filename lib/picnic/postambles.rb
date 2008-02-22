@@ -39,7 +39,7 @@ module Picnic
             
       begin
         s = WEBrick::HTTPServer.new(
-          :BindAddress => "0.0.0.0",
+          :BindAddress => Picnic::Conf.bind_address || "0.0.0.0",
           :Port => Picnic::Conf.port
         )
       rescue Errno::EACCES
@@ -124,7 +124,11 @@ module Picnic
       
       puts "\n** #{self} is starting. Look in #{Picnic::Conf.log[:file].inspect} for further notices."
       
-      settings = {:host => "0.0.0.0", :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH}
+      settings = {
+        :host => Picnic::Conf.bind_address || "0.0.0.0", 
+        :log_file => Picnic::Conf.log[:file], 
+        :cwd => $APP_PATH
+      }
       
       # need to close all IOs before daemonizing
       $LOG.close if $DAEMONIZE
