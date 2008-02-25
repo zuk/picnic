@@ -49,6 +49,14 @@ module Picnic
       
       self.create
       s.mount "#{Picnic::Conf.uri_path}", WEBrick::CampingHandler, self
+      
+      public_dirs = Picnic::Conf.public_dirs || Picnic::Conf.public_dir
+      public_dirs = [public_dirs] unless public_dirs.kind_of? Array
+      
+      public_dirs.each do |d|
+        s.mount "#{Picnic::Conf.uri_path}#{d[:path]}", WEBrick::HTTPServlet::FileHandler, d[:dir]
+      end
+      
     
       # This lets Ctrl+C shut down your server
       trap(:INT) do
@@ -133,13 +141,19 @@ module Picnic
       # need to close all IOs before daemonizing
       $LOG.close if $DAEMONIZE
       
+      public_dirs = Picnic::Conf.public_dirs || Picnic::Conf.public_dir
+      public_dirs = [public_dirs] unless public_dirs.kind_of? Array
+      
       begin
         app_mod = self
-        config = Mongrel::Configurator.new settings  do
+        mongrel = Mongrel::Configurator.new settings  do
           daemonize :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH if $DAEMONIZE
-          
+          puts Picnic::Conf.uri_path
           listener :port => Picnic::Conf.port do
             uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(app_mod)
+            public_dirs.each do |d|
+              uri "#{Picnic::Conf.uri_path}#{d[:path]}", :handler => Mongrel::DirHandler.new(d[:dir])
+            end
             setup_signals
           end
         end
@@ -147,8 +161,7 @@ module Picnic
         exit 1
       end
       
-      
-      config.run
+      mongrel.run
       
       self.init_logger
       #self.init_db_logger
@@ -163,8 +176,9 @@ module Picnic
       
       puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to '#{Picnic::Conf.log[:file]}'"
       
+      
       self.prestart if self.respond_to? :prestart
-      config.join
+      mongrel.join
 
       clear_pid_file
 

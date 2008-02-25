@@ -1,10 +1,15 @@
-=== 0.5.1 :: In Progress...
+=== 0.6.0 :: In Progress...
 
 * Added support for CAS authentication. See picnic/authentication.rb for 
   details.
 * Webrick and Mongrel can now be made to bind to a specific IP address using
   the :bind_address option. If no :bind_address is specified, the server will
   listen on all addresses (i.e. '0.0.0.0').
+* The Public controller for serving the '/public' directory is gone. It has
+  been replaced by respective Webrick and Mongrel mechanisms for serving
+  directory contents, since these are much faster. If you're using CGI/FastCGI,
+  you'll have to manually configure your web server (i.e. probably Apache)
+  to serve your public directory contents.
 * The gem package now correctly recognizes markaby as a required
   dependency.
 * Some possible source file loading problems fixed.
