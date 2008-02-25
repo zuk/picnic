@@ -32,8 +32,8 @@ class Module
       # See <tt>config.example.yml</tt> for info on configuring the logger.
       def init_logger
         puts "Initializing #{self} logger..."
-        $LOG = self::Utils::Logger.new(self::Conf.log[:file])
-        $LOG.level = "#{self}::Utils::Logger::#{self::Conf.log[:level]}".constantize
+        $LOG = Picnic::Utils::Logger.new(self::Conf.log[:file])
+        $LOG.level = "Picnic::Utils::Logger::#{self::Conf.log[:level]}".constantize
       end
       module_function :init_logger
       
