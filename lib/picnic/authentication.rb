@@ -110,9 +110,10 @@ module Picnic #:nodoc:
     #    contents.
     #
     module Cas
-      require 'camping/db'
-      require 'camping/session'
-      
+      def self.include
+        require 'camping/db'
+        require 'camping/session'
+      end
       
       $: << File.dirname(File.expand_path(__FILE__))+"/../../../rubycas-client2/lib" # for development
       require 'rubycas-client'
