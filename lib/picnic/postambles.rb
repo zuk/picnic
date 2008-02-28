@@ -51,12 +51,13 @@ module Picnic
       s.mount "#{Picnic::Conf.uri_path}", WEBrick::CampingHandler, self
       
       public_dirs = Picnic::Conf.public_dirs || Picnic::Conf.public_dir
-      public_dirs = [public_dirs] unless public_dirs.kind_of? Array
-      
-      public_dirs.each do |d|
-        s.mount "#{Picnic::Conf.uri_path}#{d[:path]}", WEBrick::HTTPServlet::FileHandler, d[:dir]
+      if public_dirs
+        public_dirs = [public_dirs] unless public_dirs.kind_of? Array
+        
+        public_dirs.each do |d|
+          s.mount "#{Picnic::Conf.uri_path}#{d[:path]}", WEBrick::HTTPServlet::FileHandler, d[:dir]
+        end
       end
-      
     
       # This lets Ctrl+C shut down your server
       trap(:INT) do
@@ -142,7 +143,8 @@ module Picnic
       $LOG.close if $DAEMONIZE
       
       public_dirs = Picnic::Conf.public_dirs || Picnic::Conf.public_dir
-      public_dirs = [public_dirs] unless public_dirs.kind_of? Array
+      public_dirs = [public_dirs] unless 
+        public_dirs.kind_of? Array || public_dirs.nil?
       
       begin
         app_mod = self
@@ -151,9 +153,13 @@ module Picnic
           puts Picnic::Conf.uri_path
           listener :port => Picnic::Conf.port do
             uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(app_mod)
-            public_dirs.each do |d|
-              uri "#{Picnic::Conf.uri_path}#{d[:path]}", :handler => Mongrel::DirHandler.new(d[:dir])
+            
+            if public_dirs
+              public_dirs.each do |d|
+                uri "#{Picnic::Conf.uri_path}#{d[:path]}", :handler => Mongrel::DirHandler.new(d[:dir])
+              end
             end
+            
             setup_signals
           end
         end
