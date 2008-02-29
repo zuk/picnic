@@ -55,7 +55,10 @@ module Picnic
         public_dirs = [public_dirs] unless public_dirs.kind_of? Array
         
         public_dirs.each do |d|
-          s.mount "#{Picnic::Conf.uri_path}#{d[:path]}", WEBrick::HTTPServlet::FileHandler, d[:dir]
+          dir = d[:dir]
+          path = "#{Picnic::Conf.uri_path}/#{d[:path]}".gsub(/\/\/+/,'/')
+          $LOG.debug("Mounting public directory #{dir.inspect} to path #{path.inspect}.")
+          s.mount(path, WEBrick::HTTPServlet::FileHandler, dir)
         end
       end
     
@@ -150,13 +153,16 @@ module Picnic
         app_mod = self
         mongrel = Mongrel::Configurator.new settings  do
           daemonize :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH if $DAEMONIZE
-          puts Picnic::Conf.uri_path
           listener :port => Picnic::Conf.port do
             uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(app_mod)
             
+            
             if public_dirs
               public_dirs.each do |d|
-                uri "#{Picnic::Conf.uri_path}#{d[:path]}", :handler => Mongrel::DirHandler.new(d[:dir])
+                dir = d[:dir]
+                path = "#{Picnic::Conf.uri_path}/#{d[:path]}".gsub(/\/\/+/,'/')
+                $LOG.debug("Mounting public directory #{dir.inspect} to path #{path.inspect}.")
+                uri(path, :handler => Mongrel::DirHandler.new(dir))
               end
             end
             
