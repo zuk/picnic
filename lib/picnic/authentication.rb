@@ -58,7 +58,7 @@ module Picnic #:nodoc:
       
       def service(*a)
         app = Kernel.const_get self.class.name.gsub(/^(\w+)::.+$/, '\1')
-        unless app.methods.include? :authenticate
+        unless app.respond_to? :authenticate
           raise "Basic authentication is enabled but the 'authenticate' method has not been defined."
         end
         
@@ -110,14 +110,19 @@ module Picnic #:nodoc:
     #    contents.
     #
     module Cas
-      def self.include
+      # For some reason the Module#included callback is just not working for me, so I had
+      # to resort to overriding append_features(). If anyone has any ideas why, please
+      # let me know!
+      def self.append_features(mod)
+        super
+        
         require 'camping/db'
         require 'camping/session'
+        
+        $: << File.dirname(File.expand_path(__FILE__))+"/../../../rubycas-client2/lib" # for development
+        require 'rubycas-client'
       end
-      
-      $: << File.dirname(File.expand_path(__FILE__))+"/../../../rubycas-client2/lib" # for development
-      require 'rubycas-client'
-       
+
 #       app = Kernel.const_get self.name.gsub(/^(\w+)::.+$/, '\1')
 #       raise "Cannot enable CAS authentication because your Camping app does not extend Camping::Session." unless
 #        app.ancestors.include?(Camping::Session)
