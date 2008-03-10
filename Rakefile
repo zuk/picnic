@@ -18,6 +18,7 @@ GEM_NAME = "picnic"
 RUBYFORGE_PROJECT = "picnic"
 HOMEPATH = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 
+ENV['NODOT'] = '1'
 
 NAME = "picnic"
 #REV = nil
