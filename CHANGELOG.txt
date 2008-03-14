@@ -1,3 +1,8 @@
+=== 0.6.3 :: 2007-03-14
+
+* Fixed bug in mongrel postamble that prevented the server from starting when
+  the log level was set to DEBUG.
+
 === 0.6.2 :: 2007-03-06
 
 * Fixed some loading problems having to do with the new CAS authenticator

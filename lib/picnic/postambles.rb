@@ -153,10 +153,11 @@ module Picnic
         app_mod = self
         mongrel = Mongrel::Configurator.new settings  do
           daemonize :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH if $DAEMONIZE
+          app_mod.init_logger
+          #app_mod.init_db_logger
           listener :port => Picnic::Conf.port do
             uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(app_mod)
-            
-            
+
             if public_dirs
               public_dirs.each do |d|
                 dir = d[:dir]
@@ -174,9 +175,7 @@ module Picnic
       end
       
       mongrel.run
-      
-      self.init_logger
-      #self.init_db_logger
+            
       
       if $DAEMONIZE && $PID_FILE
         write_pid_file
