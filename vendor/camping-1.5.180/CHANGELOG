@@ -1,3 +1,15 @@
+= Patches
+=== 31st Mar, 2008
+
+* Can now set expiry time for cookies.
+    
+    @cookies[:foo] = {:value => "bar", :expires => Time.now + 1.hour}
+    
+  The simple method of setting cookies without expiry still works.
+  
+    @cookies[:foo] = "bar"
+    
+
 = 1.5
 === 3rd Oct, 2006
 

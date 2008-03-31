@@ -1,3 +1,7 @@
+=== 0.6.4 :: In Progress...
+
+* Patched bundled Camping librar to allow setting expiry time on cookies.
+
 === 0.6.3 :: 2007-03-14
 
 * Fixed bug in mongrel postamble that prevented the server from starting when

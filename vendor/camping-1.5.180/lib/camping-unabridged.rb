@@ -434,7 +434,9 @@ module Camping
     # on before and after overrides with Camping.
     def service(*a)
       @body = send(@method, *a) if respond_to? @method
-      @headers['Set-Cookie'] = @cookies.map { |k,v| "#{k}=#{C.escape(v)}; path=#{self/"/"}" if v != @k[k] } - [nil]
+      @headers['Set-Cookie'] = @cookies.map { |k,v| 
+        "#{k}=#{C.escape(v[:value] || v)}; path=#{self/"/"}; expires=#{v[:expires] && v[:expires].strftime('%a, %d-%b-%Y %H:%M:%S %Z') || nil}" if v != @k[k] 
+      } - [nil]
       self
     end
 
