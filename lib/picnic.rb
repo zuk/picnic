@@ -46,12 +46,15 @@ class Module
       
       # Initialize your application's database logger. 
       # If enabled, all SQL queries going through ActiveRecord will be logged here.
+      #
+      # THIS SEEMS TO BE BROKEN RIGHT NOW and I can't really understand why.
       def init_db_logger
         begin
           if self::Conf.db_log
             log_file = self::Conf.db_log[:file] || "#{self.to_s.downcase}_db.log"
-            self::Models::Base.logger = Logger.new(log_file)
-            self::Models::Base.logger.level = "#{self}::Utils::Logger::#{self::Conf.db_log[:level] || 'DEBUG'}".constantize
+            self::Models::Base.logger = Picnic::Utils::Logger.new(log_file)
+            self::Models::Base.logger.level = "Picnic::Utils::Logger::#{self::Conf.db_log[:level] || 'DEBUG'}".constantize
+            $LOG.debug "Logging database queries to #{log_file.inspect}"
           end
         rescue Errno::EACCES => e
           $LOG.warn "Can't write to database log file at '#{log_file}': #{e}"

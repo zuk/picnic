@@ -82,6 +82,7 @@ module Picnic
         
         WEBrick::Daemon.start do
           begin
+            #self.init_db_logger
             write_pid_file if $PID_FILE
             $LOG.info "Starting #{self} as a WEBrick daemon with process id #{Process.pid}."
             self.prestart if self.respond_to? :prestart
