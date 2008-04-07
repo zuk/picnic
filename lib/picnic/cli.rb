@@ -1,5 +1,12 @@
 require 'optparse'
 
+begin
+  require 'activesupport'
+rescue LoadError
+  require 'rubygems'
+  require 'activesupport'
+end
+
 module Picnic
   # Provides a command-line interface for your app. 
   # This is useful for creating a 'bin' file for launching your application.
@@ -41,11 +48,12 @@ module Picnic
     def initialize(app, options = {})
       @app = app
       
-      @options = {}
-      @options[:app_path]  ||= File.expand_path(File.dirname(File.expand_path(__FILE__))+"/../lib/#{app}.rb")
-      @options[:pid_file]  ||= "/etc/#{app}/#{app}.pid"
-      @options[:conf_file] ||= nil
-      @options[:verbose]   ||= false
+      @options = options || {}
+      @options[:app_path]   ||= File.expand_path(File.dirname(File.expand_path(__FILE__))+"/../lib/#{app}.rb")
+      @options[:app_module] ||= app.constantize
+      @options[:pid_file]   ||= "/etc/#{app}/#{app}.pid"
+      @options[:conf_file]  ||= nil
+      @options[:verbose]    ||= false
       
       @options = options
     end
@@ -97,7 +105,8 @@ module Picnic
         
         opts.on_tail("-V", "--version", "Show version number") do
           require "#{path}/lib/#{app}/version"
-          puts "#{app}-#{VERSION::STRING}"
+          app_mod = @options[:app_module].constantize
+          puts "#{app}-#{app_mod::VERSION::STRING}"
           exit
         end
       end.parse!
