@@ -50,7 +50,7 @@ module Picnic
       
       @options = options || {}
       @options[:app_path]   ||= File.expand_path(File.dirname(File.expand_path(__FILE__))+"/../lib/#{app}.rb")
-      @options[:app_module] ||= app.capitalize.constantize
+      @options[:app_module] ||= app.capitalize
       @options[:pid_file]   ||= "/etc/#{app}/#{app}.pid"
       @options[:conf_file]  ||= nil
       @options[:verbose]    ||= false
