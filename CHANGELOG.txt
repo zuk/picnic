@@ -1,5 +1,7 @@
 === 0.6.4 :: In Progress...
 
+* Fixed bug where the log file was being truncuated whenever the server
+  was started in daemon mode.
 * Patched bundled Camping library to allow setting expiry time on cookies.
 * CLI initializer can now be fed an alternate module name for your application.
   This will override the module that would have been guessed based on the

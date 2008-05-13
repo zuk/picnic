@@ -219,7 +219,7 @@ module Picnic
     def check_log_writable
       log_file = Picnic::Conf.log['file']
       begin
-        f = open(log_file, 'w')
+        f = open(log_file, 'a')
       rescue
         $stderr.puts "Couldn't write to log file at '#{log_file}' (#{$!})."
         exit 1
