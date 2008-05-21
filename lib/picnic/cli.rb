@@ -1,10 +1,10 @@
 require 'optparse'
 
 begin
-  require 'activesupport'
+  require 'active_support'
 rescue LoadError
   require 'rubygems'
-  require 'activesupport'
+  require 'active_support'
 end
 
 module Picnic
