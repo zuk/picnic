@@ -1,4 +1,4 @@
-=== 0.6.4 :: In Progress...
+=== 0.6.4 :: 2008-05-26
 
 * Patched bundled Camping library to allow setting expiry time on cookies.
 * CLI initializer can now be fed an alternate module name for your application.
@@ -11,17 +11,17 @@
 * Fixed bug where the log file was being truncuated whenever the server
   was started in daemon mode.
 
-=== 0.6.3 :: 2007-03-14
+=== 0.6.3 :: 2008-03-14
 
 * Fixed bug in mongrel postamble that prevented the server from starting when
   the log level was set to DEBUG.
 
-=== 0.6.2 :: 2007-03-06
+=== 0.6.2 :: 2008-03-06
 
 * Fixed some loading problems having to do with the new CAS authenticator
   introduced in 0.6.0.
 
-=== 0.6.1 :: 2007-02-28
+=== 0.6.1 :: 2008-02-28
 
 * Fixed bug introduced in 0.6.0 where webrick and mongrel postambles were
   broken for apps that don't define any public directories.
@@ -29,7 +29,7 @@
   some potential issues with the uri_path config option. Multiple /'s
   in the path are now automatically removed.
 
-=== 0.6.0 :: 2007-02-26
+=== 0.6.0 :: 2008-02-26
 
 * Added support for CAS authentication. See picnic/authentication.rb for 
   details.
