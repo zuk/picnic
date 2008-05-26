@@ -1,11 +1,15 @@
 === 0.6.4 :: In Progress...
 
-* Fixed bug where the log file was being truncuated whenever the server
-  was started in daemon mode.
 * Patched bundled Camping library to allow setting expiry time on cookies.
 * CLI initializer can now be fed an alternate module name for your application.
   This will override the module that would have been guessed based on the
   app's name.
+* Fixed bug where HTTPS operation didn't work under Webrick. You should now
+  again be able to serve over HTTPS when using webrick by supplying the
+  ssl_cert configuration option.
+  See: http://code.google.com/p/rubycas-server/issues/detail?id=45
+* Fixed bug where the log file was being truncuated whenever the server
+  was started in daemon mode.
 
 === 0.6.3 :: 2007-03-14
 

@@ -36,12 +36,36 @@ module Picnic
       cert_path = Picnic::Conf.ssl_cert
       key_path = Picnic::Conf.ssl_key || Picnic::Conf.ssl_cert
         # look for the key in the ssl_cert if no ssl_key is specified
+      
+      webrick_options = {
+        :BindAddress => Picnic::Conf.bind_address || "0.0.0.0",
+        :Port => Picnic::Conf.port
+      }
+      
+      unless cert_path.nil? && key_path.nil?
+        raise "The specified certificate file #{cert_path.inspect} does not exist. " +
+          " Your 'ssl_cert' configuration setting must be a path to a valid " +
+          " ssl certificate." unless
+            File.exists? cert_path
+        
+        raise "The specified key file #{key_path.inspect} does not exist. " +
+          " Your 'ssl_key' configuration setting must be a path to a valid " +
+          " ssl private key." unless
+            File.exists? key_path
             
+        require 'openssl'
+        
+        cert = OpenSSL::X509::Certificate.new(File.read(cert_path))
+        key = OpenSSL::PKey::RSA.new(File.read(key_path))
+        
+        webrick_options[:SSLEnable] = true
+        webrick_options[:SSLVerifyClient] = ::OpenSSL::SSL::VERIFY_NONE
+        webrick_options[:SSLCertificate] = cert
+        webrick_options[:SSLPrivateKey] = key
+      end
+      
       begin
-        s = WEBrick::HTTPServer.new(
-          :BindAddress => Picnic::Conf.bind_address || "0.0.0.0",
-          :Port => Picnic::Conf.port
-        )
+        s = WEBrick::HTTPServer.new(webrick_options)
       rescue Errno::EACCES
         puts "\nThe server could not launch. Are you running on a privileged port? (e.g. port 443) If so, you must run the server as root."
         exit 2
@@ -69,9 +93,11 @@ module Picnic
       trap(:TERM) do
         s.shutdown
       end
+      
+      server_url = "http#{webrick_options[:SSLEnable] ? 's' : ''}://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path}"
             
       if $DAEMONIZE
-        puts "\n** #{self} will run at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and log to #{Picnic::Conf.log[:file].inspect}. "
+        puts "\n** #{self} will run at #{server_url} and log to #{Picnic::Conf.log[:file].inspect}. "
         puts "** Check the log file for further messages!\n\n"
         
         logdev = $LOG.instance_variable_get(:@logdev).instance_variable_get(:@filename)
@@ -95,7 +121,7 @@ module Picnic
           end
         end
       else
-        puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to #{Picnic::Conf.log[:file].inspect}\n\n"
+        puts "\n** #{self} is running at #{server_url} and logging to #{Picnic::Conf.log[:file].inspect}\n\n"
         self.prestart if self.respond_to? :prestart
         s.start
       end
