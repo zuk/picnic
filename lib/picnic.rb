@@ -54,7 +54,7 @@ class Module
           if self::Conf.db_log
             log_file = self::Conf.db_log[:file] || "#{self.to_s.downcase}_db.log"
             self::Models::Base.logger = Picnic::Utils::Logger.new(log_file)
-            self::Models::Base.logger.level = "Picnic::Utils::Logger::#{self::Conf.db_log[:level] || 'DEBUG'}".constantize
+            self::Models::Base.logger.level = self::Utils::Logger.const_get(self::Conf.db_log[:level] || 'DEBUG')
             $LOG.debug "Logging database queries to #{log_file.inspect}"
           end
         rescue Errno::EACCES => e
