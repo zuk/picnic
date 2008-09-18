@@ -1,12 +1,13 @@
 $: << File.dirname(File.expand_path(__FILE__))
 $: << File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib"
 
-
 unless Object.const_defined?(:ActiveSupport)
   begin
     require 'active_support'
   rescue LoadError
     require 'rubygems'
+    gem 'activesupport', '~>2.1.1'
+    gem 'activerecord', '~>2.1.1'
     require 'active_support'
   end
 end
@@ -40,7 +41,7 @@ class Module
       def init_logger
         puts "Initializing #{self} logger..."
         $LOG = Picnic::Utils::Logger.new(self::Conf.log[:file])
-        $LOG.level = "Picnic::Utils::Logger::#{self::Conf.log[:level]}".constantize
+        $LOG.level = self::Utils::Logger.const_get(self::Conf.log[:level])
       end
       module_function :init_logger
       
@@ -84,7 +85,7 @@ class Module
       #
       def authenticate_using(mod)
         require 'picnic/authentication'
-        mod = "#{self}::Authentication::#{mod.to_s.camelize}".constantize unless mod.kind_of? Module
+        mod = self::Authentication.const_get(mod.to_s.camelize) unless mod.kind_of? Module
         
         $LOG.info("Enabling authentication for all requests using #{mod.inspect}.")
         
