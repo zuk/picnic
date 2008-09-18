@@ -6,8 +6,8 @@ unless Object.const_defined?(:ActiveSupport)
     require 'active_support'
   rescue LoadError
     require 'rubygems'
-    gem 'activesupport', '~>2.1.1'
-    gem 'activerecord', '~>2.1.1'
+    gem 'activesupport', '>=2.0.2'
+    gem 'activerecord', '>=2.0.2'
     require 'active_support'
   end
 end

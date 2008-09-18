@@ -1,1 +1,53 @@
-See CHANGELOG.txt
+=== 0.6.5 :: 2008-09-18
+
+* Fixed compatibility with ActiveSupport 2.1.
+
+=== 0.6.4 :: 2008-05-26
+
+* Patched bundled Camping library to allow setting expiry time on cookies.
+* CLI initializer can now be fed an alternate module name for your application.
+  This will override the module that would have been guessed based on the
+  app's name.
+* Fixed bug where HTTPS operation didn't work under Webrick. You should now
+  again be able to serve over HTTPS when using webrick by supplying the
+  ssl_cert configuration option.
+  See: http://code.google.com/p/rubycas-server/issues/detail?id=45
+* Fixed bug where the log file was being truncuated whenever the server
+  was started in daemon mode.
+
+=== 0.6.3 :: 2008-03-14
+
+* Fixed bug in mongrel postamble that prevented the server from starting when
+  the log level was set to DEBUG.
+
+=== 0.6.2 :: 2008-03-06
+
+* Fixed some loading problems having to do with the new CAS authenticator
+  introduced in 0.6.0.
+
+=== 0.6.1 :: 2008-02-28
+
+* Fixed bug introduced in 0.6.0 where webrick and mongrel postambles were
+  broken for apps that don't define any public directories.
+* Each public directory mount is now logged during startup. Also resolved
+  some potential issues with the uri_path config option. Multiple /'s
+  in the path are now automatically removed.
+
+=== 0.6.0 :: 2008-02-26
+
+* Added support for CAS authentication. See picnic/authentication.rb for 
+  details.
+* Webrick and Mongrel can now be made to bind to a specific IP address using
+  the :bind_address option. If no :bind_address is specified, the server will
+  listen on all addresses (i.e. '0.0.0.0').
+* The Public controller for serving the '/public' directory is gone. It has
+  been replaced by respective Webrick and Mongrel mechanisms for serving
+  directory contents, since these are much faster. If you're using CGI/FastCGI,
+  you'll have to manually configure your web server (i.e. probably Apache)
+  to serve your public directory contents.
+* The gem package now correctly recognizes markaby as a required
+  dependency.
+
+=== 0.5.0 :: 2007-12-20
+
+* First public release.

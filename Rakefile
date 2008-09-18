@@ -54,6 +54,9 @@ hoe = Hoe.new(GEM_NAME, VERS) do |p|
   #p.extra_deps     - An array of rubygem dependencies.
   #p.spec_extras    - A hash of extra values to set in the gemspec.
   
-  # note that camping-1.5.0.180 is now bundled with picnic the vendor directory, 
-  p.extra_deps = ['markaby']
+  # note that camping-1.5.0.180 is now bundled with picnic in the vendor directory. 
+  p.extra_deps = [
+    'markaby',
+    ['activesupport', '>=2.0.2']
+  ]
 end
