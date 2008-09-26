@@ -169,58 +169,67 @@ module Picnic
         :cwd => $APP_PATH
       }
       
-      # need to close all IOs before daemonizing
-      $LOG.close if $DAEMONIZE
-      
-      public_dirs = Picnic::Conf.public_dirs || Picnic::Conf.public_dir
-      public_dirs = [public_dirs] unless 
-        public_dirs.kind_of? Array || public_dirs.nil?
-      
       begin
-        app_mod = self
-        mongrel = Mongrel::Configurator.new settings  do
-          daemonize :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH if $DAEMONIZE
-          app_mod.init_logger
-          #app_mod.init_db_logger
-          listener :port => Picnic::Conf.port do
-            uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(app_mod)
-
-            if public_dirs
-              public_dirs.each do |d|
-                dir = d[:dir]
-                path = "#{Picnic::Conf.uri_path}/#{d[:path]}".gsub(/\/\/+/,'/')
-                $LOG.debug("Mounting public directory #{dir.inspect} to path #{path.inspect}.")
-                uri(path, :handler => Mongrel::DirHandler.new(dir))
+        # need to close all IOs before daemonizing
+        $LOG.close if $DAEMONIZE
+        
+        public_dirs = Picnic::Conf.public_dirs || Picnic::Conf.public_dir
+        public_dirs = [public_dirs] unless 
+          public_dirs.kind_of? Array || public_dirs.nil?
+        
+        begin
+          app_mod = self
+          mongrel = Mongrel::Configurator.new settings  do
+            daemonize :log_file => Picnic::Conf.log[:file], :cwd => $APP_PATH if $DAEMONIZE
+            app_mod.init_logger
+            #app_mod.init_db_logger
+            listener :port => Picnic::Conf.port do
+              uri Picnic::Conf.uri_path, :handler => Mongrel::Camping::CampingHandler.new(app_mod)
+  
+              if public_dirs
+                public_dirs.each do |d|
+                  dir = d[:dir]
+                  path = "#{Picnic::Conf.uri_path}/#{d[:path]}".gsub(/\/\/+/,'/')
+                  $LOG.debug("Mounting public directory #{dir.inspect} to path #{path.inspect}.")
+                  uri(path, :handler => Mongrel::DirHandler.new(dir))
+                end
               end
+              
+              setup_signals
             end
-            
-            setup_signals
           end
-        end
-      rescue Errno::EADDRINUSE
-        exit 1
-      end
-      
-      mongrel.run
-            
-      
-      if $DAEMONIZE && $PID_FILE
-        write_pid_file
-        unless File.exists? $PID_FILE
-          $LOG.error "#{self} could not start because pid file #{$PID_FILE.inspect} could not be created."
+        rescue Errno::EADDRINUSE
           exit 1
         end
-      end
-      
-      puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to '#{Picnic::Conf.log[:file]}'"
       
       
-      self.prestart if self.respond_to? :prestart
-      mongrel.join
-
-      clear_pid_file
-
-      puts "\n** #{self} is stopped (#{Time.now})"
+        mongrel.run
+        
+        if $DAEMONIZE && $PID_FILE
+          write_pid_file
+          unless File.exists? $PID_FILE
+            $LOG.error "#{self} could not start because pid file #{$PID_FILE.inspect} could not be created."
+            exit 1
+          end
+        end
+        
+        puts "\n** #{self} is running at http://#{ENV['HOSTNAME'] || 'localhost'}:#{Picnic::Conf.port}#{Picnic::Conf.uri_path} and logging to '#{Picnic::Conf.log[:file]}'"
+        
+        
+        self.prestart if self.respond_to? :prestart
+        mongrel.join
+  
+        clear_pid_file
+        
+        if mongrel.needs_restart
+          $LOG.info "#{self} is restarting..."
+          puts "\n** #{self} is restarting..."
+        else
+          $LOG.info "#{self} is stopped."
+          puts "\n** #{self} is stopped (#{Time.now})"
+        end
+        
+      end while mongrel.needs_restart
     end
     
     # Theoretically this should launch your Picnic app as a FastCGI process.
