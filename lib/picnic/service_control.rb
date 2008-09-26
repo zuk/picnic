@@ -247,6 +247,11 @@ module Picnic
     end
     
     def get_state
+      # FIXME: This is a poor attempt at trying to fix a problem where occassionally 
+      #        an empty pid_file is read, probably because it has not yet been
+      #        fully written.  
+      sleep 0.5
+      
       if File.exists? @options[:pid_file]
         pid = File.read(@options[:pid_file]).strip
         
