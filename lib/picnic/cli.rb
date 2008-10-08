@@ -54,8 +54,6 @@ module Picnic
       @options[:pid_file]   ||= "/etc/#{app}/#{app}.pid"
       @options[:conf_file]  ||= nil
       @options[:verbose]    ||= false
-      
-      @options = options
     end
     
     # Parses command line options given to the script.
@@ -97,7 +95,12 @@ module Picnic
             puts "Not running as daemon.  Ignoring pid option"
           end
         end
-      
+ 
+        # :extra_cli_options should be a block with additonal app-specific opts.on() calls
+        if @options[:extra_cli_options]
+          @options[:extra_cli_options].call(opts)
+        end     
+
         opts.on_tail("-h", "--help", "Show this message") do
           puts opts
           exit
