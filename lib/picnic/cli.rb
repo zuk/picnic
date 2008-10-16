@@ -1,12 +1,5 @@
 require 'optparse'
 
-begin
-  require 'active_support'
-rescue LoadError
-  require 'rubygems'
-  require 'active_support'
-end
-
 module Picnic
   # Provides a command-line interface for your app. 
   # This is useful for creating a 'bin' file for launching your application.
