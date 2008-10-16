@@ -1,17 +1,17 @@
 $: << File.dirname(File.expand_path(__FILE__))
-$: << File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib"
 
-unless Object.const_defined?(:ActiveSupport)
-  begin
-    require 'active_support'
-  rescue LoadError
-    require 'rubygems'
-    gem 'activesupport', '>=2.0.2'
-    gem 'activerecord', '>=2.0.2'
-    require 'active_support'
-  end
+require 'rubygems'
+
+begin
+  gem 'activesupport', '>= 2.0.2'
+rescue LoadError => e
+  $stderr.puts e
+  raise e
 end
 
+require 'active_support'
+
+$: << File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib"
 require 'camping'
 
 require 'picnic/utils'

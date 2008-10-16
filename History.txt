@@ -3,7 +3,10 @@
 * Can now configure the CLI aspect of an app to respond to additional command-
   line flags. This is done by passing a block of OptionParser calls as
   an :extra_cli_options parameter to the Cli initializer.
-
+* activerecord is no longer a requirement. However you should make sure that
+  you take care of loading activerecord in your app if you intend to use
+  Camping's database functionality.
+  
 === 0.6.5 :: 2008-09-18
 
 * Fixed compatibility with ActiveSupport 2.1.
