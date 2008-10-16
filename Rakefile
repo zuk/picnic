@@ -57,6 +57,6 @@ hoe = Hoe.new(GEM_NAME, VERS) do |p|
   # note that camping-1.5.0.180 is now bundled with picnic in the vendor directory. 
   p.extra_deps = [
     'markaby',
-    ['activesupport', '>=2.0.2']
+    'activesupport'
   ]
 end

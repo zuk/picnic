@@ -1,22 +1,15 @@
-$: << File.dirname(File.expand_path(__FILE__))
-
 require 'rubygems'
-
-begin
-  gem 'activesupport', '>= 2.0.2'
-rescue LoadError => e
-  $stderr.puts e
-  raise e
-end
-
 require 'active_support'
 
-$: << File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib"
-require 'camping'
+camping_path = File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib" 
+$: << camping_path
+load "#{camping_path}/camping.rb"
 
-require 'picnic/utils'
-require 'picnic/conf'
-require 'picnic/postambles'
+current_path = File.dirname(File.expand_path(__FILE__))
+$: << current_path
+load "#{current_path}/picnic/utils.rb"
+load "#{current_path}/picnic/conf.rb"
+load "#{current_path}/picnic/postambles.rb"
 
 
 class Module
@@ -84,7 +77,7 @@ class Module
       # your app's conf file.
       #
       def authenticate_using(mod)
-        require 'picnic/authentication'
+        load "picnic/authentication.rb"
         mod = self::Authentication.const_get(mod.to_s.camelize) unless mod.kind_of? Module
         
         $LOG.info("Enabling authentication for all requests using #{mod.inspect}.")
@@ -98,7 +91,7 @@ class Module
       # Launches the web server to run your Picnic app.
       # This method will continue to run as long as your server is running.
       def start_picnic
-          require 'picnic/postambles'
+          load "#{File.dirname(File.expand_path(__FILE__))}/picnic/postambles.rb"
           self.extend self::Postambles
           
           if $PID_FILE && !(self::Conf.server.to_s == 'mongrel' || self::Conf.server.to_s == 'webrick')

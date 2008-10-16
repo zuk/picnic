@@ -15,7 +15,7 @@ module Picnic
   #
   #   cli = Picnic::Cli.new(
   #     'foo',
-  #     :app_path => File.expand_path(File.dirname(File.expand_path(__FILE__)))
+  #     :app_path => "/path/to/foo.br"
   #   )
   #
   #   cli.handle_cli_input   
@@ -31,7 +31,7 @@ module Picnic
     #         binary, which by default is expected to be in the same directory
     #         as the service control script.
     # +options+:: A hash overriding default options. The options are:
-    #             +app_path+:: The path to your application's main Ruby file.
+    #             +app_file+:: The path to your application's main Ruby file.
     #                          By default this is expected to be <tt>../lib/<app>.rb</tt>
     #             +pid_file+:: Where the app's PID file (containing the app's
     #                          process ID) should be placed. By default this is
@@ -42,7 +42,7 @@ module Picnic
       @app = app
       
       @options = options || {}
-      @options[:app_path]   ||= File.expand_path(File.dirname(File.expand_path(__FILE__))+"/../lib/#{app}.rb")
+      @options[:app_file]   ||= File.expand_path(File.dirname(File.expand_path($0))+"/../lib/#{app}.rb")
       @options[:app_module] ||= app.capitalize
       @options[:pid_file]   ||= "/etc/#{app}/#{app}.pid"
       @options[:conf_file]  ||= nil
@@ -51,16 +51,24 @@ module Picnic
     
     # Parses command line options given to the script.
     def handle_cli_input
-      if File.exists? options[:app_path]
+      puts options[:app_file]
+      if File.exists? options[:app_file]
         # try to use given app base path
-        $: << File.dirname(options[:app_path])
-        path = File.dirname(options[:app_path])+"/"
+        $APP_PATH = File.dirname(options[:app_file]).gsub(/\/lib\/?$/, '')
       else
-        # fall back to using gem installation
-        path = ""
         require 'rubygems'
+        
+        # fall back to using gem installation
+        matches = Gem::source_index.find_name(app)
+        raise LoadError, "#{app} gem doesn't appear to be installed!" if matches.empty?
+        
+        gem_spec = matches.last
+        $APP_PATH = gem_spec.full_gem_path
+        
         gem(app)
       end
+      
+      $: <<  $APP_PATH+"/lib"
       
       $PID_FILE = "/etc/#{app}/#{app}.pid" 
       
@@ -100,16 +108,14 @@ module Picnic
         end
         
         opts.on_tail("-V", "--version", "Show version number") do
-          require "#{path}/lib/#{app}/version"
-          app_mod = @options[:app_module].constantize
+          load "#{$APP_PATH}/lib/#{app}/version.rb"
+          app_mod = Object.const_get(@options[:app_module])
           puts "#{app}-#{app_mod::VERSION::STRING}"
           exit
         end
       end.parse!
       
-      $APP_PATH = options[:app_path]
-      
-      load "#{path}/lib/#{app}.rb"
+      load "#{$APP_PATH}/lib/#{app}.rb"
     end
   end
 end
