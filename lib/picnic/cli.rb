@@ -51,7 +51,6 @@ module Picnic
     
     # Parses command line options given to the script.
     def handle_cli_input
-      puts options[:app_file]
       if File.exists? options[:app_file]
         # try to use given app base path
         $APP_PATH = File.dirname(options[:app_file]).gsub(/\/lib\/?$/, '')
