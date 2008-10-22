@@ -1,15 +1,13 @@
 require 'rubygems'
-require 'active_support'
+#require 'active_support'
 
-camping_path = File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib" 
-$: << camping_path
-load "#{camping_path}/camping.rb"
+$: << File.dirname(File.expand_path(__FILE__))+"/../vendor/camping-1.5.180/lib" 
+require "camping"
 
-current_path = File.dirname(File.expand_path(__FILE__))
-$: << current_path
-load "#{current_path}/picnic/utils.rb"
-load "#{current_path}/picnic/conf.rb"
-load "#{current_path}/picnic/postambles.rb"
+$: << File.dirname(File.expand_path(__FILE__))
+require "picnic/utils.rb"
+require "picnic/conf.rb"
+require "picnic/postambles.rb"
 
 
 class Module
@@ -91,7 +89,7 @@ class Module
       # Launches the web server to run your Picnic app.
       # This method will continue to run as long as your server is running.
       def start_picnic
-          load "#{File.dirname(File.expand_path(__FILE__))}/picnic/postambles.rb"
+          require "#{File.dirname(File.expand_path(__FILE__))}/picnic/postambles.rb"
           self.extend self::Postambles
           
           if $PID_FILE && !(self::Conf.server.to_s == 'mongrel' || self::Conf.server.to_s == 'webrick')

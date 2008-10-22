@@ -107,14 +107,14 @@ module Picnic
         end
         
         opts.on_tail("-V", "--version", "Show version number") do
-          load "#{$APP_PATH}/lib/#{app}/version.rb"
+          require "#{$APP_PATH}/lib/#{app}/version.rb"
           app_mod = Object.const_get(@options[:app_module])
           puts "#{app}-#{app_mod::VERSION::STRING}"
           exit
         end
       end.parse!
       
-      load "#{$APP_PATH}/lib/#{app}.rb"
+      require "#{$APP_PATH}/lib/#{app}.rb"
     end
   end
 end
