@@ -1,3 +1,9 @@
+=== 0.7.1 :: In Progress...
+
+* Fixed config file loading problems rooted in $APP_PATH inconsistencies.
+  $APP_PATH is now set to the root of the application installation, rather than
+  the bin or lib subdirectory.
+
 === 0.7.0 :: 2008-10-28
 
 * Can now configure the CLI aspect of an app to respond to additional command-

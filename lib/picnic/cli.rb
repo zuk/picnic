@@ -53,7 +53,7 @@ module Picnic
     def handle_cli_input
       if File.exists? options[:app_file]
         # try to use given app base path
-        $APP_PATH = File.dirname(options[:app_file]).gsub(/\/lib\/?$/, '')
+        $APP_PATH = File.dirname(options[:app_file]).gsub(/\/(lib|bin)\/?$/, '')
       else
         require 'rubygems'
         

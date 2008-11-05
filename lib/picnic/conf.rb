@@ -48,7 +48,7 @@ module Picnic
         caller.last =~ /^(.*?):\d+$/
         app_path = File.dirname(File.expand_path($1))
       end
-      app_path+'/../config.example.yml'
+      app_path+'/config.example.yml'
     end
     
     # Copies the example config file into the appropriate
