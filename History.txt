@@ -1,4 +1,4 @@
-=== 0.7.1 :: In Progress...
+=== 0.7.1 :: 2008-11-10
 
 * Fixed config file loading problems rooted in $APP_PATH inconsistencies.
   $APP_PATH is now set to the root of the application installation, rather than
