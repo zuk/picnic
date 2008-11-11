@@ -94,9 +94,9 @@ module Picnic
     #                          everything that it's doing to STDOUT.  
     def initialize(app, options = {})
       @app = app
-      
+
       @options = options
-      @options[:bin_file]  ||= File.expand_path(File.dirname(File.expand_path(__FILE__)))+"/#{app}"
+      @options[:bin_file]  ||= "bin/#{app}"
       @options[:pid_file]  ||= "/etc/#{app}/#{app}.pid"
       @options[:conf_file] ||= nil
       @options[:verbose]   ||= false
@@ -155,7 +155,7 @@ module Picnic
     def start
       # use local app bin if it exists and is executable -- makes debugging easier
       bin = options[:bin_file]
-      
+
       if File.exists?(bin)
         exec = "ruby #{bin}"
       else
