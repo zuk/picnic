@@ -1,12 +1,8 @@
 # -*- encoding: utf-8 -*-
 
-load 'lib/picnic/version.rb'
-REV = Time.now.strftime('%Y%m%d')
-VERSION = (Picnic::VERSION::STRING + (REV ? ".#{REV}" : ""))
-
 Gem::Specification.new do |s|
   s.name = %q{picnic}
-  s.version = VERSION
+  s.version = '0.7.999.' + Time.now.strftime('%Y%m%d')
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Matt Zukowski"]
