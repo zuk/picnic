@@ -21,14 +21,18 @@
 #   ActiveRecord is an object-to-relational database mapper with adapters
 #   for SQLite3, MySQL, PostgreSQL, SQL Server and more.
 # * Markaby, used in your views to describe HTML in plain Ruby.
-# * MetAid, a few metaprogramming methods which Camping uses.
-# * Tempfile, for storing file uploads.
 #
 # Camping also works well with Mongrel, the swift Ruby web server.
 # http://rubyforge.org/projects/mongrel  Mongrel comes with examples
 # in its <tt>examples/camping</tt> directory. 
 #
-%w[active_support markaby tempfile uri].each { |lib| require lib }
+%w[uri stringio rack].map { |l| require l }
+
+class Object #:nodoc:
+  def meta_def(m,&b) #:nodoc:
+    (class<<self;self end).send(:define_method,m,&b)
+  end
+end
 
 # == Camping 
 #
@@ -72,7 +76,6 @@
 #     unless Blog::Models::Post.table_exists?
 #       ActiveRecord::Schema.define do
 #         create_table :blog_posts, :force => true do |t|
-#           t.column :id,       :integer, :null => false
 #           t.column :user_id,  :integer, :null => false
 #           t.column :title,    :string,  :limit => 255
 #           t.column :body,     :text
@@ -83,25 +86,17 @@
 #
 # For more tips, see http://code.whytheluckystiff.net/camping/wiki/GiveUsTheCreateMethod.
 module Camping
-  # Stores an +Array+ of all Camping applications modules.  Modules are added
-  # automatically by +Camping.goes+.
-  #
-  #   Camping.goes :Blog
-  #   Camping.goes :Tepee
-  #   Camping::Apps # => [Blog, Tepee]
-  # 
-  Apps = []
   C = self
-  S = IO.read(__FILE__).sub(/^  S = I.+$/,'')
-  P="Cam\ping Problem!"
-
-  H = HashWithIndifferentAccess
-  # An object-like Hash, based on ActiveSupport's HashWithIndifferentAccess.
+  S = IO.read(__FILE__) rescue nil
+  P = "<h1>Cam\ping Problem!</h1><h2>%s</h2>"
+  U = Rack::Utils
+  Apps = []
+  # An object-like Hash.
   # All Camping query string and cookie variables are loaded as this.
   # 
   # To access the query string, for instance, use the <tt>@input</tt> variable.
   #
-  #   module Blog::Models
+  #   module Blog::Controllers
   #     class Index < R '/'
   #       def get
   #         if page = @input.page.to_i > 0
@@ -118,8 +113,7 @@ module Camping
   # to get the value for the <tt>page</tt> query variable.
   #
   # Use the <tt>@cookies</tt> variable in the same fashion to access cookie variables.
-  # Also, the <tt>@env</tt> variable is an H containing the HTTP headers and server info.
-  class H
+  class H < Hash
     # Gets or sets keys in the hash.
     #
     #   @cookies.my_favorite = :macadamian
@@ -127,9 +121,9 @@ module Camping
     #   => :macadamian
     #
     def method_missing(m,*a)
-        m.to_s=~/=$/?self[$`]=a[0]:a==[]?self[m]:raise(NoMethodError,"#{m}")
+        m.to_s=~/=$/?self[$`]=a[0]:a==[]?self[m.to_s]:super
     end
-    alias_method :u, :regular_update
+    undef id, type
   end
 
   # Helpers contains methods available in your controllers and views.  You may add
@@ -204,30 +198,15 @@ module Camping
     #
     def R(c,*g)
       p,h=/\(.+?\)/,g.grep(Hash)
-      (g-=h).inject(c.urls.find{|x|x.scan(p).size==g.size}.dup){|s,a|
-        s.sub p,C.escape((a[a.class.primary_key]rescue a))
-      }+(h.any?? "?"+h[0].map{|x|x.map{|z|C.escape z}*"="}*"&": "")
+      g-=h
+      raise "bad route" unless u = c.urls.find{|x|
+        break x if x.scan(p).size == g.size && 
+          /^#{x}\/?$/ =~ (x=g.inject(x){|x,a|
+            x.sub p,U.escape((a[a.class.primary_key]rescue a))})
+      }
+      h.any?? u+"?"+U.build_query(h[0]) : u
     end
 
-    # Shows AR validation errors for the object passed. 
-    # There is no output if there are no errors.
-    #
-    # An example might look like:
-    #
-    #   errors_for @post
-    #
-    # Might (depending on actual data) render something like this in Markaby:
-    #
-    #   ul.errors do
-    #     li "Body can't be empty"
-    #     li "Title must be unique"
-    #   end
-    #
-    # Add a simple ul.errors {color:red; font-weight:bold;} CSS rule and you
-    # have built-in, usable error checking in only one line of code. :-)
-    #
-    # See AR validation documentation for details on validations.
-    def errors_for(o); ul.errors { o.errors.each_full { |er| li er } } if o.errors.any?; end
     # Simply builds a complete path from a path +p+ within the app.  If your application is 
     # mounted at <tt>/blog</tt>:
     #
@@ -235,37 +214,32 @@ module Camping
     #   self / "styles.css" #=> "styles.css"
     #   self / R(Edit, 1)   #=> "/blog/edit/1"
     #
-    def /(p); p[/^\//]?@root+p:p end
+    def /(p); p[0]==?/?@root+p:p end
     # Builds a URL route to a controller or a path, returning a URI object.
     # This way you'll get the hostname and the port number, a complete URL.
-    # No scheme is given (http or https).
     #
     # You can use this to grab URLs for controllers using the R-style syntax.
     # So, if your application is mounted at <tt>http://test.ing/blog/</tt>
     # and you have a View controller which routes as <tt>R '/view/(\d+)'</tt>:
     #
-    #   URL(View, @post.id)    #=> #<URL://test.ing/blog/view/12>
+    #   URL(View, @post.id)    #=> #<URL:http://test.ing/blog/view/12>
     #
     # Or you can use the direct path:
     #
-    #   self.URL               #=> #<URL://test.ing/blog/>
-    #   self.URL + "view/12"   #=> #<URL://test.ing/blog/view/12>
-    #   URL("/view/12")        #=> #<URL://test.ing/blog/view/12>
-    #
-    # Since no scheme is given, you will need to add the scheme yourself:
-    #
-    #   "http" + URL("/view/12")   #=> "http://test.ing/blog/view/12"
+    #   self.URL               #=> #<URL:http://test.ing/blog/>
+    #   self.URL + "view/12"   #=> #<URL:http://test.ing/blog/view/12>
+    #   URL("/view/12")        #=> #<URL:http://test.ing/blog/view/12>
     #
     # It's okay to pass URL strings through this method as well:
     #
-    #   URL("http://google.com")  #=> #<URI:http://google.com>
+    #   URL("http://google.com")  #=> #<URL:http://google.com>
     #
     # Any string which doesn't begin with a slash will pass through
     # unscathed.
     def URL c='/',*a
       c = R(c, *a) if c.respond_to? :urls
       c = self/c
-      c = "//"+@env.HTTP_HOST+c if c[/^\//]
+      c = @request.url[/.{8,}?(?=\/)/]+c if c[0]==?/
       URI(c)
     end
   end
@@ -304,9 +278,7 @@ module Camping
   #   end
   #
   module Base
-    include Helpers
-    attr_accessor :input, :cookies, :env, :headers, :body, :status, :root
-    Z = "\r\n"
+    attr_accessor :input, :cookies, :headers, :body, :status, :root
 
     # Display a view, calling it by its method name +m+.  If a <tt>layout</tt>
     # method is found in Camping::Views, it will be used to wrap the HTML.
@@ -320,25 +292,49 @@ module Camping
     #     end
     #   end
     #
-    def render(m); end; undef_method :render
-
-    # Any stray method calls will be passed to Markaby.  This means you can reply
-    # with HTML directly from your controller for quick debugging.
+    # You can also return directly html by just passing a block
     #
+    def render(v,*a,&b)
+      mab(/^_/!~v.to_s){send(v,*a,&b)}
+    end
+
+    # You can directly return HTML form your controller for quick debugging
+    # by calling this method and pass some Markaby to it.
+    # 
     #   module Camping::Controllers
     #     class Info
-    #       def get; code @env.inspect end
+    #       def get; mab{ code @headers.inspect } end
     #     end
     #   end
     #
-    # If you have a <tt>layout</tt> method in Camping::Views, it will be used to
-    # wrap the HTML.
-    def method_missing(*a,&b)
-      a.shift if a[0]==:render
+    # You can also pass true to use the :layout HTML wrapping method
+    #
+    def mab(l=nil,&b)
       m=Mab.new({},self)
-      s=m.capture{send(*a,&b)}
-      s=m.capture{send(:layout){s}} if /^_/!~a[0].to_s and m.respond_to?:layout
+      s=m.capture(&b)
+      s=m.capture{layout{s}} if l && m.respond_to?(:layout)
       s
+    end
+
+    # A quick means of setting this controller's status, body and headers.
+    # Used internally by Camping, but... by all means...
+    #
+    #   r(302, '', 'Location' => self / "/view/12")
+    #
+    # Is equivalent to:
+    #
+    #   redirect "/view/12"
+    #
+    # You can also switch the body and the header in order to support Rack:
+    #
+    #  r(302, {'Location' => self / "/view/12"}, '')
+    #
+    # See also: #r404, #r500 and #r501
+    def r(s, b, h = {})
+      b, h = h, b if Hash === b
+      @status = s
+      @headers.merge!(h)
+      @body = b
     end
 
     # Formulate a redirect response: a 302 status with <tt>Location</tt> header
@@ -354,19 +350,44 @@ module Camping
     # You'll need to <tt>return redirect(...)</tt> if this isn't the last statement
     # in your code.
     def redirect(*a)
-      r(302,'','Location'=>URL(*a))
+      r(302,'','Location'=>URL(*a).to_s)
     end
 
-    # A quick means of setting this controller's status, body and headers.
-    # Used internally by Camping, but... by all means...
+    # Called when a controller was not found. It is mainly used internally, but it can
+    # also be useful for you, if you want to filter some parameters.
     #
-    #   r(302, '', 'Location' => self / "/view/12")
+    # module Camping
+    #   def r404(p=env.PATH)
+    #     @status = 404
+    #     div do
+    #       h1 'Camping Problem!'
+    #       h2 "#{p} not found"
+    #     end
+    #   end
+    # end
     #
-    # Is equivalent to:
+    # See: I
+    def r404(p=env.PATH)
+      r(404, P % "#{p} not found")
+    end
+
+    # If there is a parse error in Camping or in your application's source code, it will not be caught
+    # by Camping.  The controller class +k+ and request method +m+ (GET, POST, etc.) where the error
+    # took place are passed in, along with the Exception +e+ which can be mined for useful info.
     #
-    #   redirect "/view/12"
+    # You can overide it, but if you have an error in here, it will be uncaught !
     #
-    def r(s, b, h = {}); @status = s; @headers.merge!(h); @body = b; end
+    # See: I
+    def r500(k,m,x)
+      r(500, P % "#{k}.#{m}" + "<h3>#{x.class} #{x.message}: <ul>#{x.backtrace.map{|b|"<li>#{b}</li>"}}</ul></h3>")
+    end
+
+    # Called if an undefined method is called on a Controller, along with the request method +m+ (GET, POST, etc.)
+    #
+    # See: I
+    def r501(m=@method)
+      r(501, P % "#{m.upcase} not implemented")
+    end
 
     # Turn a controller into an array.  This is designed to be used to pipe
     # controllers into the <tt>r</tt> method.  A great way to forward your
@@ -376,55 +397,36 @@ module Camping
     #     def get(id)
     #       Post.find(id)
     #     rescue
-    #       r *Blog.get(:NotFound, @env.REQUEST_URI)
+    #       r *Blog.get(:NotFound, @headers.REQUEST_URI)
     #     end
     #   end
-    #
-    def to_a;[@status, @body, @headers] end
-
-    def initialize(r, e, m) #:nodoc:
-      e = H[e.to_hash]
-      @status, @method, @env, @headers, @root = 200, m.downcase, e, 
-          {'Content-Type'=>'text/html'}, e.SCRIPT_NAME.sub(/\/$/,'')
-      @k = C.kp(e.HTTP_COOKIE)
-      qs = C.qsp(e.QUERY_STRING)
-      @in = r
-      if %r|\Amultipart/form-data.*boundary=\"?([^\";,]+)|n.match(e.CONTENT_TYPE)
-        b = /(?:\r?\n|\A)#{Regexp::quote("--#$1")}(?:--)?\r$/
-        until @in.eof?
-          fh=H[]
-          for l in @in
-            case l
-            when Z: break
-            when /^Content-Disposition: form-data;/
-              fh.u H[*$'.scan(/(?:\s(\w+)="([^"]+)")/).flatten]
-            when /^Content-Type: (.+?)(\r$|\Z)/m
-              puts "=> fh[type] = #$1"
-              fh[:type] = $1
-            end
-          end
-          fn=fh[:name]
-          o=if fh[:filename]
-            o=fh[:tempfile]=Tempfile.new(:C)
-            o.binmode
-          else
-            fh=""
-          end
-          while l=@in.read(16384)
-            if l=~b
-              o<<$`.chomp
-              @in.seek(-$'.size,IO::SEEK_CUR)
-              break
-            end
-            o<<l
-          end
-          C.qsp(fn,'&;',fh,qs) if fn
-          fh[:tempfile].rewind if fh.is_a?H
-        end
-      elsif @method == "post"
-        qs.merge!(C.qsp(@in.read))
+    def to_a
+      @response.body = (@body.respond_to?(:each) ? @body : '')
+      @response.status = @status
+      @response.headers.merge!(@headers)
+      @cookies.each do |k, v|
+        v = {:value => v, :path => self / "/"} if String===v
+        @response.set_cookie(k, v) if @request.cookies[k] != v
       end
-      @cookies, @input = @k.dup, qs.dup
+      @response.to_a
+    end
+    
+    def initialize(env) #:nodoc: 
+      @request, @response, @env =
+      Rack::Request.new(env), Rack::Response.new, env
+      @root, @input, @cookies,
+      @headers, @status =
+      @env.SCRIPT_NAME.sub(/\/$/,''), 
+      H[@request.params], H[@request.cookies],
+      @response.headers, @response.status
+            
+      @input.each do |k, v|
+        if k[-2..-1] == "[]"
+          @input[k[0..-3]] = @input.delete(k)
+        elsif k =~ /(.*)\[([^\]]+)\]$/
+          (@input[$1] ||= H[])[$2] = @input.delete(k)
+        end
+      end
     end
 
     # All requests pass through this method before going to the controller.  Some magic
@@ -433,21 +435,10 @@ module Camping
     # See http://code.whytheluckystiff.net/camping/wiki/BeforeAndAfterOverrides for more
     # on before and after overrides with Camping.
     def service(*a)
-      @body = send(@method, *a) if respond_to? @method
-      @headers['Set-Cookie'] = @cookies.map { |k,v| 
-        "#{k}=#{C.escape(v[:value] || v)}; path=#{self/"/"}; expires=#{v[:expires] && v[:expires].strftime('%a, %d-%b-%Y %H:%M:%S %Z') || nil}" if v != @k[k] 
-      } - [nil]
+      r = catch(:halt){send(@env.REQUEST_METHOD.downcase, *a)}
+      @body ||= r 
       self
     end
-
-    # Used by the web server to convert the current request to a string.  If you need to
-    # alter the way Camping builds HTTP headers, consider overriding this method.
-    def to_s
-      a=[]
-      @headers.map{|k,v|[*v].map{|x|a<<"#{k}: #{x}"}}
-      "Status: #{@status}#{Z+a*Z+Z*2+@body}"
-    end
-
   end
 
   # Controllers is a module for placing classes which handle URLs.  This is done
@@ -463,15 +454,10 @@ module Camping
   # If no route is set, Camping will guess the route from the class name.
   # The rule is very simple: the route becomes a slash followed by the lowercased
   # class name.  See Controllers::D for the complete rules of dispatch.
-  #
-  # == Special classes
-  #
-  # There are two special classes used for handling 404 and 500 errors.  The
-  # NotFound class handles URLs not found.  The ServerError class handles exceptions
-  # uncaught by your application.
   module Controllers
     @r = []
     class << self
+      # An array containing the various controllers available for dispatch.
       def r #:nodoc:
         @r
       end
@@ -513,15 +499,18 @@ module Camping
       # # Classes with routes are searched in order of their creation.
       #
       # So, define your catch-all controllers last.
-      def D(path)
+      def D(p, m)
+        p = '/' if !p || !p[0]
         r.map { |k|
           k.urls.map { |x|
-            return k, $~[1..-1] if path =~ /^#{x}\/?$/
+            return (k.instance_method(m) rescue nil) ?
+              [k, m, *$~[1..-1]] : [I, 'r501', m] if p =~ /^#{x}\/?$/
           }
         }
-        [NotFound, [path]]
+        [I, 'r404', p]
       end
 
+      N = H.new { |_,x| x.downcase }.merge! "N" => '(\d+)', "X" => '(\w+)', "Index" => ''
       # The route maker, this is called by Camping internally, you shouldn't need to call it.
       #
       # Still, it's worth know what this method does.  Since Ruby doesn't keep track of class
@@ -536,66 +525,15 @@ module Camping
         end
         constants.map { |c|
           k=const_get(c)
-          k.send :include,C,Base,Models
-          r[0,0]=k if !r.include?k
-          k.meta_def(:urls){["/#{c.downcase}"]}if !k.respond_to?:urls
+          k.send :include,C,Base,Helpers,Models
+          @r=[k]+r if r-[k]==r
+          k.meta_def(:urls){["/#{c.scan(/.[^A-Z]*/).map(&N.method(:[]))*'/'}"]}if !k.respond_to?:urls
         }
       end
     end
 
-    # The NotFound class is a special controller class for handling 404 errors, in case you'd
-    # like to alter the appearance of the 404.  The path is passed in as +p+.
-    #
-    #   module Camping::Controllers
-    #     class NotFound
-    #       def get(p)
-    #         @status = 404
-    #         div do
-    #           h1 'Camping Problem!'
-    #           h2 "#{p} not found"
-    #         end
-    #       end
-    #     end
-    #   end
-    #
-    class NotFound < R()
-      def get(p)
-        r(404, Mab.new{h1(P);h2("#{p} not found")})
-      end
-    end
-
-    # The ServerError class is a special controller class for handling many (but not all) 500 errors.
-    # If there is a parse error in Camping or in your application's source code, it will not be caught
-    # by Camping.  The controller class +k+ and request method +m+ (GET, POST, etc.) where the error
-    # took place are passed in, along with the Exception +e+ which can be mined for useful info.
-    #
-    #   module Camping::Controllers
-    #     class ServerError
-    #       def get(k,m,e)
-    #         @status = 500
-    #         div do
-    #           h1 'Camping Problem!'
-    #           h2 "in #{k}.#{m}"
-    #           h3 "#{e.class} #{e.message}:"
-    #           ul do
-    #             e.backtrace.each do |bt|
-    #               li bt
-    #             end
-    #           end
-    #         end
-    #       end
-    #     end
-    #   end
-    #
-    class ServerError < R()
-      def get(k,m,e)
-        r(500, Mab.new { 
-          h1(P)
-          h2 "#{k}.#{m}"
-          h3 "#{e.class} #{e.message}:"
-          ul { e.backtrace.each { |bt| li bt } }
-        }.to_s)
-      end
+    # Internal controller with no route. Used by #D and C.call to show internal messages.
+    class I < R()
     end
   end
   X = Controllers
@@ -613,74 +551,18 @@ module Camping
     #   module Blog::Views;       ... end
     #
     def goes(m)
-      eval S.gsub(/Camping/,m.to_s).gsub("A\pps = []","Cam\ping::Apps<<self"), TOPLEVEL_BINDING
+      Apps << eval(S.gsub(/Camping/,m.to_s), TOPLEVEL_BINDING)
     end
-
-    # URL escapes a string.
-    #
-    #   Camping.escape("I'd go to the museum straightway!")  
-    #     #=> "I%27d+go+to+the+museum+straightway%21"
-    #
-    def escape(s); s.to_s.gsub(/[^ \w.-]+/n){'%'+($&.unpack('H2'*$&.size)*'%').upcase}.tr(' ', '+') end
-
-    # Unescapes a URL-encoded string.
-    #
-    #   Camping.un("I%27d+go+to+the+museum+straightway%21") 
-    #     #=> "I'd go to the museum straightway!"
-    #
-    def un(s); s.tr('+', ' ').gsub(/%([\da-f]{2})/in){[$1].pack('H*')} end
-
-    # Parses a query string into an Camping::H object.
-    #
-    #   input = Camping.qsp("name=Philarp+Tremain&hair=sandy+blonde")
-    #   input.name
-    #     #=> "Philarp Tremaine"
-    #
-    # Also parses out the Hash-like syntax used in PHP and Rails and builds
-    # nested hashes from it.
-    #
-    #   input = Camping.qsp("post[id]=1&post[user]=_why")
-    #     #=> {'post' => {'id' => '1', 'user' => '_why'}}
-    #
-    def qsp(qs, d='&;', y=nil, z=H[])
-        m = proc {|_,o,n|o.u(n,&m)rescue([*o]<<n)}
-        (qs||'').
-            split(/[#{d}] */n).
-            inject((b,z=z,H[])[0]) { |h,p| k, v=un(p).split('=',2)
-                h.u(k.split(/[\]\[]+/).reverse.
-                    inject(y||v) { |x,i| H[i,x] },&m)
-            } 
-    end
-
-    # Parses a string of cookies from the <tt>Cookie</tt> header.
-    def kp(s); c = qsp(s, ';,'); end
-
-    # Fields a request through Camping.  For traditional CGI applications, the method can be
-    # executed without arguments.
-    #
-    #   if __FILE__ == $0
-    #     Camping::Models::Base.establish_connection :adapter => 'sqlite3',
-    #         :database => 'blog3.db'
-    #     Camping::Models::Base.logger = Logger.new('camping.log')
-    #     puts Camping.run
-    #   end
-    #
-    # The Camping controller returned from <tt>run</tt> has a <tt>to_s</tt> method in case you
-    # are running from CGI or want to output the full HTTP output.  In the above example, <tt>puts</tt>
-    # will call <tt>to_s</tt> for you.
-    #
-    # For FastCGI and Webrick-loaded applications, you will need to use a request loop, with <tt>run</tt>
-    # at the center, passing in the read +r+ and write +w+ streams.  You will also need to mimick or
-    # pass in the <tt>ENV</tt> replacement as part of your wrapper.
-    #
-    # See Camping::FastCGI and Camping::WEBrick for examples.
-    #
-    def run(r=$stdin,e=ENV)
+    
+    # Ruby web servers use this method to enter the Camping realm. The e
+    # argument is the environment variables hash as per the Rack specification.
+    # And array with [statuc, headers, body] is expected at the output.
+    def call(e)
       X.M
-      k,a=X.D un("/#{e['PATH_INFO']}".gsub(/\/+/,'/'))
-      k.new(r,e,(m=e['REQUEST_METHOD']||"GET")).Y.service *a
-    rescue Object=>x
-      X::ServerError.new(r,e,'get').service(k,m,x)
+      e = H[e.to_hash]
+      k,m,*a=X.D e.PATH_INFO,(e.REQUEST_METHOD||'get').downcase
+      e.REQUEST_METHOD = m
+      k.new(e).service(*a).to_a
     end
 
     # The Camping scriptable dispatcher.  Any unhandled method call to the app module will
@@ -698,18 +580,28 @@ module Camping
     #   Blog.post(:Login, :input => {'username' => 'admin', 'password' => 'camping'})
     #   #=> #<Blog::Controllers::Login @user=... >
     #
-    #   Blog.get(:Info, :env => {:HTTP_HOST => 'wagon'})
-    #   #=> #<Blog::Controllers::Info @env={'HTTP_HOST'=>'wagon'} ...>
+    #   Blog.get(:Info, :env => {'HTTP_HOST' => 'wagon'})
+    #   #=> #<Blog::Controllers::Info @headers={'HTTP_HOST'=>'wagon'} ...>
     #
     def method_missing(m, c, *a)
       X.M
-      k = X.const_get(c).new(StringIO.new,
-             H['HTTP_HOST','','SCRIPT_NAME','','HTTP_COOKIE',''],m.to_s)
-      H.new(a.pop).each { |e,f| k.send("#{e}=",f) } if Hash === a[-1]
-      k.service *a
+      h=Hash===a[-1]?H[a.pop]:{}
+      e=H[h[:env]||{}].merge!({'rack.input'=>StringIO.new,'REQUEST_METHOD'=>m.to_s})
+      k = X.const_get(c).new(H[e])
+      k.send("input=",h[:input]) if h[:input]
+      k.service(*a)
     end
   end
 
+  # Views is an empty module for storing methods which create HTML.  The HTML is described
+  # using the Markaby language.
+  #
+  # == Using the layout method
+  #
+  # If your Views module has a <tt>layout</tt> method defined, it will be called with a block
+  # which will insert content from your view.
+  module Views; include X, Helpers end
+ 
   # Models is an empty Ruby module for housing model classes derived
   # from ActiveRecord::Base.  As a shortcut, you may derive from Base
   # which is an alias for ActiveRecord::Base.
@@ -736,29 +628,11 @@ module Camping
   #
   # Models cannot be referred to in Views at this time.
   module Models
-      autoload :Base,'camping/db'
+      autoload :Base,'camping/ar'
       def Y;self;end
   end
-
-  # Views is an empty module for storing methods which create HTML.  The HTML is described
-  # using the Markaby language.
-  #
-  # == Using the layout method
-  #
-  # If your Views module has a <tt>layout</tt> method defined, it will be called with a block
-  # which will insert content from your view.
-  module Views; include Controllers, Helpers end
-  
-  # The Mab class wraps Markaby, allowing it to run methods from Camping::Views
-  # and also to replace :href, :action and :src attributes in tags by prefixing the root
-  # path.
-  class Mab < Markaby::Builder
-      include Views
-      def tag!(*g,&b)
-          h=g[-1]
-          [:href,:action,:src].each{|a|(h[a]=self/h[a])rescue 0}
-          super 
-      end
-  end
+ 
+  autoload :Mab, 'camping/mab'
+  C
 end
 

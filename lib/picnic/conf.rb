@@ -1,3 +1,5 @@
+require 'active_support'
+
 module Picnic
   # Provides an interface for accessing your Picnic app's configuration file.
   #
@@ -11,18 +13,21 @@ module Picnic
   #   puts Conf[:authentication][:username]
   #   # ... etc.
   class Conf
-    $CONF ||= HashWithIndifferentAccess.new
-    $CONF[:log] ||= HashWithIndifferentAccess.new
-    $CONF[:log][:file]  ||= STDOUT
-    $CONF[:log][:level] ||= 'DEBUG'
-    $CONF[:uri_path]    ||= "/"
+    def initialize(from_hash = {})
+      @conf = HashWithIndifferentAccess.new(from_hash)
+      
+      @conf[:log] ||= HashWithIndifferentAccess.new
+      @conf[:log].merge!(:file => STDOUT, :level => 'DEBUG')
+      
+      @conf[:uri_path] ||= "/"
+    end
     
     # Read a configuration option.
     #
     # For example:
     #   puts Conf[:server]
-    def self.[](key)
-      $CONF[key]
+    def [](key)
+      @conf[key]
     end
     
     # Another way of reading a configuration option.
@@ -30,8 +35,13 @@ module Picnic
     # The following statements are equivalent:
     #   puts Conf[:server]
     #   puts Conf.server
-    def self.method_missing(method, *args)
+    def method_missing(method, *args)
       self[method]
+    end
+    
+    # Needs to be defined when we have a custom method_missing().
+    def respond_to?(method)
+      (@conf.stringify_keys.keys).include?(method.to_s) || super
     end
     
     # Returns the path to your application's example config file.
@@ -41,32 +51,27 @@ module Picnic
     # <tt>config.example.yml</tt>. This file is used as a template
     # for your app's configuration, to be customized by the end
     # user. 
-    def self.example_config_file_path
-      if $APP_PATH
-        app_path = File.expand_path($APP_PATH)
-      else
-        caller.last =~ /^(.*?):\d+$/
-        app_path = File.dirname(File.expand_path($1))
-      end
-      app_path+'/config.example.yml'
+    def example_config_file_path(app_root)
+      "#{app_root}/config.example.yml"
     end
     
     # Copies the example config file into the appropriate
     # configuration directory.
     #
-    # +app+:: The name of your application. For example: <tt>foo</tt>
+    # +app_name+:: The name of your application. For example: <tt>foo</tt>
+    # +app_root+:: The path to your application's root directory. For example: <tt>/srv/www/camping/foo/</tt>
     # +dest_conf_file:: The path where the example conf file should be copied to.
     #                   For example: <tt>/etc/foo/config.yml</tt>
-    def self.copy_example_config_file(app, dest_conf_file)
+    def copy_example_config_file(app_name, app_root, dest_conf_file)
       require 'fileutils'
           
-      example_conf_file = example_config_file_path
+      example_conf_file = example_config_file_path(app_root)
       
-      puts "\n#{app.to_s.upcase} SERVER HAS NOT YET BEEN CONFIGURED!!!\n"
+      puts "\n#{app_name.to_s.upcase} SERVER HAS NOT YET BEEN CONFIGURED!!!\n"
       puts "\nAttempting to copy sample configuration from '#{example_conf_file}' to '#{dest_conf_file}'...\n"
       
       unless File.exists? example_conf_file 
-        puts "\nThe example conf file does not exist! The author of #{app} may have forgotten to include it. You'll have to create the config file manually.\n"
+        puts "\nThe example conf file does not exist! The author of #{app_name} may have forgotten to include it. You'll have to create the config file manually.\n"
         exit 2
       end
       
@@ -84,50 +89,47 @@ module Picnic
       end
       
       puts "\nA sample configuration has been created for you in '#{dest_conf_file}'. Please edit this file to" +
-        " suit your needs and then run #{app} again.\n"
+        " suit your needs and then run #{app_name} again.\n"
       exit 1
     end
     
-    # Loads the configuration from the yaml file for the given app.
+    # Loads the configuration from the YAML file for the given app.
     #
-    # <tt>app</tt> should be the name of your app; for example: <tt>foo</tt>.
+    # <tt>app_name</tt> should be the name of your app; for example: <tt>foo</tt>
+    # <tt>app_root</tt> should be the path to your application's root directory; for example:: <tt>/srv/www/camping/foo/</tt>
+    # [<tt>config_file</tt>] can be the path to an alternate location for the config file to load
     #
-    # By default, the configuration will be loaded from <tt>/etc/<app>/config.yml</tt>.
-    # You can override this by setting a global <tt>$CONFIG_FILE</tt> variable.
-    def self.load(app)
+    # By default, the configuration will be loaded from <tt>/etc/<app_name>/config.yml</tt>.
+    def load_from_file(app_name, app_root, config_file = nil)
+      conf_file = config_file || "/etc/#{app_name.to_s.downcase}/config.yml"
       
-      conf_file = $CONFIG_FILE || "/etc/#{app.to_s.downcase}/config.yml"
-      
-      puts "Loading configuration for #{app} from '#{conf_file}'..."
+      puts "Loading configuration for #{app_name.inspect} from #{conf_file.inspect}..."
       
       begin
         conf_file = etc_conf = conf_file
         unless File.exists? conf_file 
           # can use local config.yml file in case we're running non-gem installation
-          conf_file = File.dirname(File.expand_path(__FILE__))+"/../../config.yml"
+          conf_file = "#{app_root}/config.yml"
         end
       
         unless File.exists? conf_file  
-          copy_example_config_file(app, etc_conf)
+          copy_example_config_file(app_name, app_root, etc_conf)
         end
         
         loaded_conf = HashWithIndifferentAccess.new(YAML.load_file(conf_file))
         
-        if $CONF
-          $CONF = HashWithIndifferentAccess.new($CONF)
-          $CONF = $CONF.merge(loaded_conf)
-        else
-          $CONF = loaded_conf
-        end
+        @conf.merge!(loaded_conf)
         
-        $CONF[:log][:file] = STDOUT unless $CONF[:log][:file]
-        
-      rescue
-          raise "Your #{app} configuration may be invalid."+
+      rescue => e
+          raise "Your #{app_name} configuration may be invalid."+
             " Please double-check check your config.yml file."+
             " Make sure that you are using spaces instead of tabs for your indentation!!" +
-            "\n\nTHE UNDERLYING ERROR WAS:\n#{$!}"
+            "\n\nTHE UNDERLYING ERROR WAS:\n#{e.inspect}"
       end
+    end
+    
+    def merge_defaults(defaults)
+      @conf = HashWithIndifferentAccess.new(HashWithIndifferentAccess.new(defaults).merge(@conf))
     end
   end
 end

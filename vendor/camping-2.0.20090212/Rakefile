@@ -7,9 +7,9 @@ require 'fileutils'
 include FileUtils
 
 NAME = "camping"
-REV = File.read(".svn/entries")[/committed-rev="(\d+)"/, 1] rescue nil
-VERS = ENV['VERSION'] || ("1.5" + (REV ? ".#{REV}" : ""))
-CLEAN.include ['**/.*.sw?', '*.gem', '.config', 'test/test.log']
+REV = (`#{ENV['GIT'] || "git"} rev-list HEAD`.split.length + 1).to_s rescue nil
+VERS = ENV['VERSION'] || ("1.9" + (REV ? ".#{REV}" : ""))
+CLEAN.include ['**/.*.sw?', '*.gem', '.config', 'test/test.log', '.*.pt']
 RDOC_OPTS = ['--quiet', '--title', "Camping, the Documentation",
     "--opname", "index.html",
     "--line-numbers", 
@@ -17,7 +17,7 @@ RDOC_OPTS = ['--quiet', '--title', "Camping, the Documentation",
     "--inline-source"]
 
 desc "Packages up Camping."
-task :default => [:package]
+task :default => [:check]
 task :package => [:clean]
 
 task :doc => [:before_doc, :rdoc, :after_doc]
@@ -59,8 +59,8 @@ spec =
         s.homepage = 'http://code.whytheluckystiff.net/camping/'
         s.executables = ['camping']
 
-        s.add_dependency('activesupport', '>=1.3.1')
         s.add_dependency('markaby', '>=0.5')
+        s.add_dependency('rack', '>=0.3')
         s.add_dependency('metaid')
         s.required_ruby_version = '>= 1.8.2'
 
@@ -114,4 +114,61 @@ Rake::TestTask.new(:test) do |t|
   t.test_files = FileList['test/test_*.rb']
 #  t.warning = true
 #  t.verbose = true
+end
+
+desc "Compare camping and camping-unabridged parse trees"
+task :diff do
+  if `which parse_tree_show`.strip.empty?
+    STDERR.puts "ERROR: parse_tree_show missing : `gem install ParseTree`"
+    exit 1
+  end
+
+  sh "parse_tree_show lib/camping.rb > .camping.pt"
+  sh "parse_tree_show lib/camping-unabridged.rb > .camping-unabridged.pt"
+  sh "diff -u .camping-unabridged.pt .camping.pt | less"
+end
+
+task :ruby_diff do
+  require 'ruby2ruby'
+  c = Ruby2Ruby.translate(File.read("lib/camping.rb"))
+  n = Ruby2Ruby.translate(File.read("lib/camping-unabridged.rb"))
+  
+  File.open(".camping-unabridged.rb.rb","w"){|f|f<<c}
+  File.open(".camping.rb.rb","w"){|f|f<<n}
+  
+  sh "diff -u .camping-unabridged.rb.rb .camping.rb.rb | less"
+end
+
+task :check => ["check:valid", "check:size", "check:lines"]
+namespace :check do
+
+  desc "Check source code validity"
+  task :valid do
+    ruby "-rubygems", "-w", "lib/camping-unabridged.rb"
+    ruby "-rubygems", "-w", "lib/camping.rb"
+  end
+
+  SIZE_LIMIT = 4096
+  desc "Compare camping sizes to unabridged"
+  task :size do
+    FileList["lib/camping*.rb"].each do |path|
+      s = File.size(path)
+      puts "%21s : % 6d % 4d%" % [File.basename(path), s, (100 * s / SIZE_LIMIT)]
+    end
+    if File.size("lib/camping.rb") > SIZE_LIMIT
+      STDERR.puts "lib/camping.rb: file is too big (> #{SIZE_LIMIT})"
+    end
+  end
+
+  desc "Verify that line lenght doesn't exceed 80 chars for camping.rb"
+  task :lines do
+    i = 1
+    File.open("lib/camping.rb").each_line do |line|
+      if line.size > 81 # 1 added for \n
+        STDERR.puts "lib/camping.rb:#{i}: line too long (#{line[-10..-1].inspect})"
+      end
+      i += 1
+    end
+  end
+
 end
