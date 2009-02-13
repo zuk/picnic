@@ -19,7 +19,7 @@ module Picnic
   #
   #   cli = Picnic::Cli.new(
   #     'foo',
-  #     :app_path => "/path/to/foo.br"
+  #     :app_file => "/path/to/foo.br"
   #   )
   #
   #   cli.handle_cli_input   
@@ -44,7 +44,7 @@ module Picnic
       @app = app
       
       @options = options || {}
-      @options[:app_file]   ||= File.expand_path(File.dirname(File.expand_path($0))+"/../lib/#{app}.rb")
+      @options[:app_file]   ||= File.expand_path(File.dirname(File.expand_path(__FILE__))+"/../lib/#{app}.rb")
       @options[:app_name]   ||= app
       @options[:app_module] ||= app.capitalize
       @options[:pid_file]   ||= "/etc/#{app}/#{app}.pid"
@@ -53,21 +53,28 @@ module Picnic
     
     # Parses command line options given to the script.
     def handle_cli_input
-      if File.exists? options[:app_file]
+#      if File.exists? options[:app_file]
         # try to use given app base path
         $APP_ROOT = File.dirname(options[:app_file]).gsub(/\/(lib|bin)\/?$/, '')
-      else
-        require 'rubygems'
-        
-        # fall back to using gem installation
-        matches = Gem::source_index.find_name(app)
-        raise LoadError, "#{app} gem doesn't appear to be installed!" if matches.empty?
-        
-        gem_spec = matches.last
-        $APP_ROOT = gem_spec.full_gem_path
-        
-        gem(app)
+#      else
+#        require 'rubygems'
+#        
+#        # fall back to using gem installation
+#        matches = Gem::source_index.find_name(app)
+#        raise LoadError, "#{app} gem doesn't appear to be installed!" if matches.empty?
+#        
+#        gem_spec = matches.last
+#        $APP_ROOT = gem_spec.full_gem_path
+#        
+#        gem(app)
+#      end
+      
+      unless File.file?(options[:app_file])
+        raise ArgumentError, "options[:app_file] points to #{options[:app_file].inspect} but this does not appear to be a valid Camping application!}"
       end
+      
+      
+      puts "Loading #{app.inspect} code from #{$APP_ROOT.inspect}..."
       
       $: <<  $APP_ROOT+"/lib"
       
@@ -76,11 +83,9 @@ module Picnic
       $VERBOSE      = @options[:verbose]
       
       opts = OptionParser.new do |opts|
-        opts.banner = "Usage: #{File.basename($0)} app.rb"
-        opts.define_head "#{File.basename($0)}, the microframework ON-button for ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
-        opts.separator ""
-        opts.separator "Application options:"
-      
+        #opts.banner = ""
+        #opts.define_head ""
+        #opts.separator ""
         opts.on("-d", "--daemonize", "Run daemonized in the background") do
           $DAEMONIZE = true
         end
@@ -105,9 +110,6 @@ module Picnic
         if @options[:extra_cli_options]
           @options[:extra_cli_options].call(opts)
         end   
-      
-        opts.separator ""
-        opts.separator "Picnic options:"
       
         # No argument, shows at tail.  This will print an options summary.
         # Try it and see!
@@ -146,14 +148,12 @@ module Picnic
         Dir.chdir $APP_ROOT
         File.umask 0000
         
-        STDIN.reopen "/dev/null"
-        STDOUT.reopen "/dev/null", "a"
-        STDERR.reopen "/dev/null", "a"
+        STDIN.reopen  $CONF.log[:file], "a"
+        STDOUT.reopen $CONF.log[:file], "a"
+        STDERR.reopen $CONF.log[:file], "a"
         
-        if $PID_FILE
-          File.open($PID_FILE, 'w'){ |f| f.write("#{Process.pid}") }
-          at_exit { File.delete($PID_FILE) if File.exist?($PID_FILE) }
-        end
+        File.open($PID_FILE, 'w'){ |f| f.write("#{Process.pid}") }
+        at_exit { File.delete($PID_FILE) if File.exist?($PID_FILE) }
       end
       
       server = Picnic::Server::Base.new($CONF, [options[:app_file]])

@@ -3,6 +3,42 @@ module Picnic #:nodoc:
   # for your Camping app. 
   #
   module Authentication
+    
+    def self.included(base)
+      base.module_eval do
+        # Enable authentication for your app.
+        #
+        # For example:
+        #
+        #   Camping.goes :Blog
+        #   Blog.picnic!
+        #
+        #   $CONF[:authentication] ||= {:username => 'admin', :password => 'picnic'}
+        #   Blog.authenticate_using :basic
+        #
+        #   module Blog
+        #     def self.authenticate(credentials)
+        #       credentials[:username] == Taskr::Conf[:authentication][:username] &&
+        #         credentials[:password] == Taskr::Conf[:authentication][:password]
+        #     end
+        #   end
+        #
+        # Note that in the above example we use the authentication configuration from
+        # your app's conf file.
+        #
+        def authenticate_using(mod)
+          mod = Picnic::Authentication.const_get(mod.to_s.camelize) unless mod.kind_of? Module
+          
+          $LOG.info("Enabling authentication for all requests using #{mod.inspect}.")
+          
+          module_eval do
+            include mod
+          end
+        end
+        module_function :authenticate_using
+      end
+    end
+    
     # Picnic::Authentication::Basic provides Basic HTTP Authentication for your Camping app. 
     # The module defines a <tt>service</tt> method that only continues the request chain when 
     # proper credentials are provided by the client (browser).
@@ -50,7 +86,7 @@ module Picnic #:nodoc:
       # Reads the username and password from the headers and returns them.
       def read_credentials
         if d = %w{REDIRECT_X_HTTP_AUTHORIZATION X-HTTP_AUTHORIZATION HTTP_AUTHORIZATION}.inject([]) \
-          { |d,h| env.has_key?(h) ? env[h].to_s.split : d }
+          { |d,h| @env.has_key?(h) ? @env[h].to_s.split : d }
           u,p = ::Base64.decode64(d[1]).split(':')[0..1] if d[0] == 'Basic'
           return {:username => u, :password => p}
         end
@@ -68,9 +104,9 @@ module Picnic #:nodoc:
           s = super(*a)
         else
           @status = 401
-          @headers['Content-type'] = @headers['Content-type'] || 'text/plain'
-          @headers['Status'] = 'Unauthorized'
-          @headers['WWW-Authenticate'] = "Basic realm=\"#{app}\""
+          headers['Content-type'] = @headers['Content-type'] || 'text/plain'
+          #headers['Status'] = 'Unauthorized'
+          headers['WWW-Authenticate'] = "Basic realm=\"#{app}\""
           @body = 'Unauthorized'
           s = self
         end
