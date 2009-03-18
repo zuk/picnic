@@ -20,6 +20,7 @@ module Picnic::Server
         rapp = Rack::URLMap.new(@conf.uri_path => rapp)
       end
       
+      rapp = Rack::Static.new(rapp, @conf[:static]) if @conf[:static]
       rapp = Rack::ContentLength.new(rapp)
       rapp = FixContentLength.new(rapp)
       rapp = Rack::Lint.new(rapp)
