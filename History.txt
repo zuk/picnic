@@ -1,3 +1,13 @@
+=== 0.8.0 :: 2009-03-18
+
+* Overhauled for Camping 2.0. Major changes throughout. Some things to
+  watch out for:
+  * Your app's bin script should now specify :app_file instead of :app_path,
+    and :app_file should point to your Camping app's main .rb file.
+  * Postamples for Mongrel and WEBrick are gone, since everything is now
+    handled by Rack. It is also now possible to run Picnic apps on Phusion
+    Passenger (mod_rails/mod_rack).
+
 === 0.7.1 :: 2008-11-10
 
 * Fixed config file loading problems rooted in $APP_PATH inconsistencies.
