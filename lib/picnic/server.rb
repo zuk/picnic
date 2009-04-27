@@ -30,7 +30,6 @@ module Picnic::Server
       
       rapp = Rack::Static.new(rapp, @conf[:static]) if @conf[:static]
       rapp = Rack::ContentLength.new(rapp)
-#      rapp = FixContentLength.new(rapp)
       rapp = Rack::Lint.new(rapp)
       rapp = Camping::Server::XSendfile.new(rapp)
       rapp = Rack::ShowExceptions.new(rapp)
@@ -89,17 +88,4 @@ module Picnic::Server
     
   end
   
-  class FixContentLength
-    def initialize(app)
-      @app = app
-    end
-  
-    def call(env)
-      status, headers, body = @app.call(env)
-      if headers.has_key?('Content-Length') && headers['Content-Length'].to_i == 0
-        headers['Content-Length'] = body.body.length.to_s
-      end
-      [status, headers, body]
-    end
-  end
 end
