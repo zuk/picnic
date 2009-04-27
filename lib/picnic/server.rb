@@ -1,7 +1,7 @@
 require 'camping/server'
 
 module Picnic::Server
-  class Base < Camping::Server::Base
+  class Base < Camping::Server
     def start
       handler, conf = case @conf.server
       when "console"
@@ -13,8 +13,16 @@ module Picnic::Server
       when "webrick"
         prep_webrick
       end
-      
-      rapp =  apps.first
+
+            
+      handler.run(self, conf) 
+    end
+
+
+    def app
+      reload!
+       
+      rapp =  apps.values.first
 
       if @conf.uri_path
         rapp = Rack::URLMap.new(@conf.uri_path => rapp)
@@ -22,12 +30,10 @@ module Picnic::Server
       
       rapp = Rack::Static.new(rapp, @conf[:static]) if @conf[:static]
       rapp = Rack::ContentLength.new(rapp)
-      rapp = FixContentLength.new(rapp)
+#      rapp = FixContentLength.new(rapp)
       rapp = Rack::Lint.new(rapp)
       rapp = Camping::Server::XSendfile.new(rapp)
       rapp = Rack::ShowExceptions.new(rapp)
-      
-      handler.run(rapp, conf) 
     end
     
     
