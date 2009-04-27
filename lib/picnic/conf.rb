@@ -25,18 +25,34 @@ module Picnic
     # Read a configuration option.
     #
     # For example:
-    #   puts Conf[:server]
+    #   puts conf[:server]
     def [](key)
       @conf[key]
     end
     
-    # Another way of reading a configuration option.
+    # Set a configuration option.
+    #
+    # For example:
+    #   conf[:server] = 'mongrel'
+    def []=(key, value)
+      @conf[key] = value
+    end
+    
+    # Another way of reading or writing a configuration option.
     #
     # The following statements are equivalent:
-    #   puts Conf[:server]
-    #   puts Conf.server
+    #   puts conf[:server]
+    #   puts conf.server
+    #
+    # These are also equivalent:
+    #   conf[:server] = 'mongrel'
+    #   conf.server = 'mongrel'
     def method_missing(method, *args)
-      self[method]
+      if method.to_s =~ /(.*?)=$/
+        self[$~[1]] = args.first
+      else
+        self[method]
+      end
     end
     
     # Needs to be defined when we have a custom method_missing().

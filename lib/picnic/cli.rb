@@ -156,6 +156,8 @@ module Picnic
         at_exit { File.delete($PID_FILE) if File.exist?($PID_FILE) }
       end
       
+      $CONF.database = :unused if $CONF.database.blank?
+      
       server = Picnic::Server::Base.new($CONF, [options[:app_file]])
       server.start
     end
