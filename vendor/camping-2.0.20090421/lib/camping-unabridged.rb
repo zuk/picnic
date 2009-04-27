@@ -9,23 +9,6 @@
 # nicely with piles of documentation everywhere.  This documentation is entirely
 # generated from lib/camping-unabridged.rb using RDoc and our "flipbook" template
 # found in the extras directory of any camping distribution.
-#
-# == Requirements
-#
-# Camping requires at least Ruby 1.8.2.
-#
-# Camping depends on the following libraries.  If you install through RubyGems,
-# these will be automatically installed for you.
-#
-# * ActiveRecord, used in your models.
-#   ActiveRecord is an object-to-relational database mapper with adapters
-#   for SQLite3, MySQL, PostgreSQL, SQL Server and more.
-# * Markaby, used in your views to describe HTML in plain Ruby.
-#
-# Camping also works well with Mongrel, the swift Ruby web server.
-# http://rubyforge.org/projects/mongrel  Mongrel comes with examples
-# in its <tt>examples/camping</tt> directory. 
-#
 %w[uri stringio rack].map { |l| require l }
 
 class Object #:nodoc:
@@ -34,7 +17,11 @@ class Object #:nodoc:
   end
 end
 
-# == Camping 
+# == Camping
+# TODO: Tutorial: Camping.goes, MVC (link to Controllers, Models, Views where
+#       they're described in detail), Camping Server (for development), Rack
+#       (for production). the create-method. Service overload too, perhaps?
+#       Overriding r404, r500 and r501.
 #
 # The camping module contains three modules for separating your application:
 #
@@ -47,6 +34,7 @@ end
 # * Camping::Helpers which can be used in controllers and views.
 #
 # == The Camping Server
+# TODO: Only for development.
 #
 # How do you run Camping apps?  Oh, uh... The Camping Server!
 #
@@ -84,6 +72,7 @@ end
 #     end
 #   end 
 #
+# TODO: Wiki is down.
 # For more tips, see http://code.whytheluckystiff.net/camping/wiki/GiveUsTheCreateMethod.
 module Camping
   C = self
@@ -91,6 +80,7 @@ module Camping
   P = "<h1>Cam\ping Problem!</h1><h2>%s</h2>"
   U = Rack::Utils
   Apps = []
+  # TODO: @input[:page] != @input['page']
   # An object-like Hash.
   # All Camping query string and cookie variables are loaded as this.
   # 
@@ -125,7 +115,8 @@ module Camping
     end
     undef id, type
   end
-
+  
+  # TODO: Fair enough. Maybe complete the ActionPack example?
   # Helpers contains methods available in your controllers and views.  You may add
   # methods of your own to this module, including many helper methods from Rails.
   # This is analogous to Rails' <tt>ApplicationHelper</tt> module.
@@ -190,7 +181,7 @@ module Camping
     # is assigned to route <tt>/logout</tt>.  The HTML will come out as:
     #
     #   <div id="menu">
-    #     <a href="//localhost:3301/frodo/">Home</a>
+    #     <a href="http://localhost:3301/frodo/">Home</a>
     #     <a href="/frodo/profile">Profile</a>
     #     <a href="/frodo/logout">Logout</a>
     #     <a href="http://google.com">Google</a>
@@ -251,6 +242,7 @@ module Camping
   # Forgivable, considering that it's only really a handful of methods and accessors.
   #
   # == Treating controller methods like Response objects
+  # TODO: I don't think this belongs here. Either Controllers or Camping.
   #
   # Camping originally came with a barebones Response object, but it's often much more readable
   # to just use your controller as the response.
@@ -279,6 +271,7 @@ module Camping
   #
   module Base
     attr_accessor :input, :cookies, :headers, :body, :status, :root
+    M = proc { |_, o, n| o.merge(n, &M) }
 
     # Display a view, calling it by its method name +m+.  If a <tt>layout</tt>
     # method is found in Camping::Views, it will be used to wrap the HTML.
@@ -328,6 +321,7 @@ module Camping
     # You can also switch the body and the header in order to support Rack:
     #
     #  r(302, {'Location' => self / "/view/12"}, '')
+    #  r(another_app.call(@env))
     #
     # See also: #r404, #r500 and #r501
     def r(s, b, h = {})
@@ -367,8 +361,8 @@ module Camping
     # end
     #
     # See: I
-    def r404(p=env.PATH)
-      r(404, P % "#{p} not found")
+    def r404(p)
+      P % "#{p} not found"
     end
 
     # If there is a parse error in Camping or in your application's source code, it will not be caught
@@ -378,15 +372,15 @@ module Camping
     # You can overide it, but if you have an error in here, it will be uncaught !
     #
     # See: I
-    def r500(k,m,x)
-      r(500, P % "#{k}.#{m}" + "<h3>#{x.class} #{x.message}: <ul>#{x.backtrace.map{|b|"<li>#{b}</li>"}}</ul></h3>")
+    def r500(k,m,e)
+      raise e
     end
 
     # Called if an undefined method is called on a Controller, along with the request method +m+ (GET, POST, etc.)
     #
     # See: I
-    def r501(m=@method)
-      r(501, P % "#{m.upcase} not implemented")
+    def r501(m)
+      P % "#{m.upcase} not implemented"
     end
 
     # Turn a controller into an array.  This is designed to be used to pipe
@@ -401,46 +395,41 @@ module Camping
     #     end
     #   end
     def to_a
-      @response.body = (@body.respond_to?(:each) ? @body : '')
-      @response.status = @status
-      @response.headers.merge!(@headers)
+      r = Rack::Response.new(@body, @status, @headers)
       @cookies.each do |k, v|
         v = {:value => v, :path => self / "/"} if String===v
-        @response.set_cookie(k, v) if @request.cookies[k] != v
+        r.set_cookie(k, v)
       end
-      @response.to_a
+      r.to_a
     end
     
-    def initialize(env) #:nodoc: 
-      @request, @response, @env =
-      Rack::Request.new(env), Rack::Response.new, env
-      @root, @input, @cookies,
-      @headers, @status =
-      @env.SCRIPT_NAME.sub(/\/$/,''), 
-      H[@request.params], H[@request.cookies],
-      @response.headers, @response.status
-            
-      @input.each do |k, v|
-        if k[-2..-1] == "[]"
-          @input[k[0..-3]] = @input.delete(k)
-        elsif k =~ /(.*)\[([^\]]+)\]$/
-          (@input[$1] ||= H[])[$2] = @input.delete(k)
-        end
+    def initialize(env, m) #:nodoc: 
+      r = @request = Rack::Request.new(@env = env)
+      @root, p, @cookies,
+      @headers, @status, @method =
+      (env.SCRIPT_NAME||'').sub(/\/$/,''), 
+      H[r.params], H[r.cookies],
+      {}, m =~ /r(\d+)/ ? $1.to_i : 200, m
+      
+      @input = p.inject(H[]) do |h, (k, v)|
+        h.merge(k.split(/[\]\[]+/).reverse.inject(v) { |x, i| H[i => x] }, &M)
       end
     end
 
+    # TODO: The wiki is down. Service overload should probably go in Camping.
     # All requests pass through this method before going to the controller.  Some magic
     # in Camping can be performed by overriding this method.
     #
     # See http://code.whytheluckystiff.net/camping/wiki/BeforeAndAfterOverrides for more
     # on before and after overrides with Camping.
     def service(*a)
-      r = catch(:halt){send(@env.REQUEST_METHOD.downcase, *a)}
+      r = catch(:halt){send(@method, *a)}
       @body ||= r 
       self
     end
   end
-
+  
+  # TODO: @input & @cookies at least.
   # Controllers is a module for placing classes which handle URLs.  This is done
   # by defining a route to each class using the Controllers::R method.
   #
@@ -510,7 +499,7 @@ module Camping
         [I, 'r404', p]
       end
 
-      N = H.new { |_,x| x.downcase }.merge! "N" => '(\d+)', "X" => '(\w+)', "Index" => ''
+      N = H.new { |_,x| x.downcase }.merge! "N" => '(\d+)', "X" => '([^/]+)', "Index" => ''
       # The route maker, this is called by Camping internally, you shouldn't need to call it.
       #
       # Still, it's worth know what this method does.  Since Ruby doesn't keep track of class
@@ -533,8 +522,7 @@ module Camping
     end
 
     # Internal controller with no route. Used by #D and C.call to show internal messages.
-    class I < R()
-    end
+    I = R()
   end
   X = Controllers
 
@@ -559,10 +547,12 @@ module Camping
     # And array with [statuc, headers, body] is expected at the output.
     def call(e)
       X.M
-      e = H[e.to_hash]
-      k,m,*a=X.D e.PATH_INFO,(e.REQUEST_METHOD||'get').downcase
-      e.REQUEST_METHOD = m
-      k.new(e).service(*a).to_a
+      e = H[e]
+      p = e.PATH_INFO = U.unescape(e.PATH_INFO)
+      k,m,*a=X.D p,(e.REQUEST_METHOD||'get').downcase
+      k.new(e,m).service(*a).to_a
+    rescue
+      r500(:I, k, m, $!, :env => e).to_a
     end
 
     # The Camping scriptable dispatcher.  Any unhandled method call to the app module will
@@ -585,14 +575,15 @@ module Camping
     #
     def method_missing(m, c, *a)
       X.M
-      h=Hash===a[-1]?H[a.pop]:{}
-      e=H[h[:env]||{}].merge!({'rack.input'=>StringIO.new,'REQUEST_METHOD'=>m.to_s})
-      k = X.const_get(c).new(H[e])
-      k.send("input=",h[:input]) if h[:input]
+      h = Hash === a[-1] ? a.pop : {}
+      e = H[Rack::MockRequest.env_for('',h[:env]||{})]
+      k = X.const_get(c).new(e,m.to_s)
+      k.send("input=", h[:input]) if h[:input]
       k.service(*a)
     end
   end
-
+  
+  # TODO: More examples.
   # Views is an empty module for storing methods which create HTML.  The HTML is described
   # using the Markaby language.
   #
@@ -601,7 +592,8 @@ module Camping
   # If your Views module has a <tt>layout</tt> method defined, it will be called with a block
   # which will insert content from your view.
   module Views; include X, Helpers end
- 
+  
+  # TODO: Migrations
   # Models is an empty Ruby module for housing model classes derived
   # from ActiveRecord::Base.  As a shortcut, you may derive from Base
   # which is an alias for ActiveRecord::Base.
