@@ -14,6 +14,10 @@ module Picnic::Server
         prep_webrick
       end
 
+      # preload the apps in order to show any startup errors when
+      # the app is run from the command line (otherwise they would only
+      # show up after the first request to the web server)
+      reload!
             
       handler.run(self, conf) 
     end

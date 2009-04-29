@@ -108,6 +108,11 @@ module Picnic
         " suit your needs and then run #{app_name} again.\n"
       exit 1
     end
+
+    # Business logic for deriving the current config file name.
+    def determine_config_filename(app_name, app_root, config_file = nil)
+      config_file || "/etc/#{app_name.to_s.downcase}/config.yml"
+    end
     
     # Loads the configuration from the YAML file for the given app.
     #
@@ -117,7 +122,7 @@ module Picnic
     #
     # By default, the configuration will be loaded from <tt>/etc/<app_name>/config.yml</tt>.
     def load_from_file(app_name, app_root, config_file = nil)
-      conf_file = config_file || "/etc/#{app_name.to_s.downcase}/config.yml"
+      conf_file = determine_config_filename(app_name, app_root, config_file)
       
       puts "Loading configuration for #{app_name.inspect} from #{conf_file.inspect}..."
       
@@ -146,6 +151,9 @@ module Picnic
     
     def merge_defaults(defaults)
       @conf = HashWithIndifferentAccess.new(HashWithIndifferentAccess.new(defaults).merge(@conf))
+    end
+
+    class Error < StandardError
     end
   end
 end
