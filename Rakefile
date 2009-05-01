@@ -22,7 +22,7 @@ ENV['NODOT'] = '1'
 
 NAME = "picnic"
 REV = nil
-#REV = Time.now.strftime('%Y%m%d%H%M')
+REV = Time.now.strftime('%Y%m%d%H%M')
 #REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 VERS = ENV['VERSION'] || (Picnic::VERSION::STRING + (REV ? ".#{REV}" : ""))
                           CLEAN.include ['**/.*.sw?', '*.gem', '.config']

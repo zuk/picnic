@@ -1,3 +1,13 @@
+=== 0.8.1 :: 2009-05-01
+
+* The bundled version of camping has been updated so we are now compatible with 
+  Passenger 2.2.
+* We now attempt to check for app loading errors during startup, rather than
+  waiting for the first request. This should make debugging bad Camping apps
+  a bit easier.
+* Mix bug fixes throughout.
+
+
 === 0.8.0 :: 2009-03-18
 
 * Overhauled for Camping 2.0. Major changes throughout. Some things to
