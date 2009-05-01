@@ -28,11 +28,12 @@ module Picnic::Server
        
       rapp =  apps.values.first
 
+      rapp = Rack::Static.new(rapp, @conf[:static]) if @conf[:static]
+
       if @conf.uri_path
         rapp = Rack::URLMap.new(@conf.uri_path => rapp)
       end
-      
-      rapp = Rack::Static.new(rapp, @conf[:static]) if @conf[:static]
+
       rapp = Rack::ContentLength.new(rapp)
       rapp = Rack::Lint.new(rapp)
       rapp = Camping::Server::XSendfile.new(rapp)
