@@ -1,3 +1,8 @@
+=== 0.8.1.1 :: 2009-05-06
+
+* The -c (--config file) option in the CLI interface was previously borken
+  and had no effect. This has now been fixed.
+
 === 0.8.1 :: 2009-05-01
 
 * The bundled version of camping has been updated so we are now compatible with 
