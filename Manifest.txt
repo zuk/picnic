@@ -2,7 +2,7 @@ CHANGELOG.txt
 History.txt
 LICENSE.txt
 Manifest.txt
-README.txt
+README.rdoc
 Rakefile
 lib/picnic.rb
 lib/picnic/authentication.rb
