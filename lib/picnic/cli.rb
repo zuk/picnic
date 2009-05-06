@@ -136,7 +136,7 @@ module Picnic
       
       
       $CONF = Picnic::Conf.new
-      $CONF.load_from_file(app, $APP_ROOT, $CONF_FILE)
+      $CONF.load_from_file(app, $APP_ROOT, $CONFIG_FILE)
       
       if $DAEMONIZE
         # TODO: use Process.daemon when RUBY_VERSION >= 1.9
