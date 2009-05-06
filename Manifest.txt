@@ -28,6 +28,7 @@ vendor/zuk-camping-2.0.20090429/examples/blog.rb
 vendor/zuk-camping-2.0.20090429/examples/campsh.rb
 vendor/zuk-camping-2.0.20090429/examples/tepee.rb
 vendor/zuk-camping-2.0.20090429/extras/Camping.gif
+vendor/zuk-camping-2.0.20090429/extras/flipbook.rb
 vendor/zuk-camping-2.0.20090429/extras/permalink.gif
 vendor/zuk-camping-2.0.20090429/lib/camping-unabridged.rb
 vendor/zuk-camping-2.0.20090429/lib/camping.rb
