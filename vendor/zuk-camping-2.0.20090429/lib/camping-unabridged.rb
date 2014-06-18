@@ -362,7 +362,8 @@ module Camping
     #
     # See: I
     def r404(p)
-      P % "#{p} not found"
+      require 'cgi'
+      P % "#{CGI::escapeHTML(p)} not found"
     end
 
     # If there is a parse error in Camping or in your application's source code, it will not be caught
